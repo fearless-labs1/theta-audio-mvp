@@ -10,7 +10,9 @@ For months, my phone would ping with dozens of prayer alarms, reminding me not t
 
 This birthed my desire to build Theta. 
 
-If no one else needed it, I did—so that my bedroom could be filled with hundreds of spoken prayers daily, keeping my spirit aligned, and so that when I left home, those same prayers and affirmations could play through my car radio or discreetly through my wireless earpiece, even with my phone locked away in my pocket—keeping me in a constant state of Theta. 
+If no one else needed it, I did—so that my bedroom could be filled with hundreds of spoken prayers daily, keeping my spirit aligned, and so that when I left home, those same prayers and affirmations could play through my car radio or discreetly through my wireless earpiece, even with my phone locked away in my pocket—keeping me in a constant state of Theta.
+
+“Seek first the kingdom of God and His righteousness, and all these things will be added to you.” — Do God’s work first; then, through prayer and petition, present your requests to Him.
 
 # 🎧 Theta Audio MVP
 
