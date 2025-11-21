@@ -1,6 +1,6 @@
 We humbly present “Theta”, 
 
-a new Christian prayer and meditation app developed by Fearless Labs, completely free to download and free forever for everyone. (Download link for the free Theta Windows app is provided below.) 
+a new Christian prayer and meditation app developed by Fearless Labs, completely free to download and free forever for everyone. (Download link for free Theta Windows & Android apps provided below.) 
 
 There’s a saying: If something you need doesn’t exist, create it. 
 
