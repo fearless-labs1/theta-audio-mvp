@@ -32,15 +32,7 @@ Automated prayer playback + AI spiritual guidance to help millions of Christians
 | 🤖 Android Mobile | ⏳ Coming Soon | - | Target: December 2025 |
 | 🍎 iOS Mobile | ⏳ Coming Soon | - | Target: December 2025 |
 
-Key fixes:
 
-Added the header row with |---|---|---|---|
-Each row on its own line
-Proper spacing between columns
-
-Paste this into your README editor and commit!RetryClaude can make mistakes. Please double-check responses.
-
----
 
 ## ✨ Features
 
