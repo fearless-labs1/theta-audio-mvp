@@ -40,12 +40,11 @@ Automated prayer playback + AI spiritual guidance to help millions of Christians
 - 🙏 **150 Time-Based Prayers** - Morning, neutral, and evening prayers that adapt to time of day
 - ⏱️ **Prayer Intervals** - Choose 3, 5, or 10-minute intervals for consistent practice
 - 🎵 **Background Audio** - Prayers continue playing with screen off (24/7 operation)
-- 🕐 **Transparent Stopwatch** - Track your meditation sessions in real-time
 - 🔄 **START/REPEAT Button** - Start prayers or repeat the last one with one button
 
 ### Advanced Features
 - 🤖 **Guide Me AI** - ChatGPT-4o powered spiritual guidance with comprehensive Christian persona
-- ⏰ **Prayer Alarm Clock** - Daily repeating alarms for consistent prayer practice (Android)
+- ⏰ **Prayer Alarm Clock** - Daily repeating alarms for consistent prayer practice (Android & iOS Apple)
 - 🚫 **No Duplicates** - Intelligent prevention of consecutive repeated prayers
 - 🎨 **Beautiful UI** - Apple-inspired design with peaceful portrait wallpaper
 - 📖 **What is Theta** - Educational narration about theta brainwave states
