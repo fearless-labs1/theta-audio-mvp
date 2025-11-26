@@ -34,6 +34,8 @@ Automated prayer playback + AI spiritual guidance to help millions of Christians
 Windows may show a warning because this app is new. 
 Click "More info" → "Run anyway" to install safely.
 
+
+
 | 🤖 Android Mobile | ⏳ Coming Soon | - | Target: December 2025 |
 | 🍎 iOS Mobile | ⏳ Coming Soon | - | Target: December 2025 |
 
