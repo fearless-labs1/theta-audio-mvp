@@ -29,6 +29,11 @@ Automated prayer playback + AI spiritual guidance to help millions of Christians
 | Platform | Status | Version | Download |
 |----------|--------|---------|----------|
 | 🪟 Windows Desktop | ✅ Production | v2.0.0 | [Download (175 MB)](https://github.com/fearless-labs1/theta-audio-mvp/releases/download/v2.0.0/ThetaSetup-v2.0.0.exe) |
+
+### ⚠️ Windows Security Note
+Windows may show a warning because this app is new. 
+Click "More info" → "Run anyway" to install safely.
+
 | 🤖 Android Mobile | ⏳ Coming Soon | - | Target: December 2025 |
 | 🍎 iOS Mobile | ⏳ Coming Soon | - | Target: December 2025 |
 
