@@ -77,7 +77,7 @@ Click "More info" → "Run anyway" to install safely.
 ## 🚀 Quick Start
 
 ### Windows Installation
-1. Download `ThetaSetup-v1.0.0.exe` from [Windows Release](https://github.com/fearless-labs1/theta-audio-mvp/releases/tag/v1.0.0)
+1. Download `ThetaSetup-v1.0.0.exe` from [Windows Release](https://github.com/fearless-labs1/theta-audio-mvp/releases/download/v2.0.0/ThetaSetup-v2.0.0.exe)
 2. Run the installer
 3. Launch Theta from desktop shortcut
 4. Click START and begin your prayer meditation
