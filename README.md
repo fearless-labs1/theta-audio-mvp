@@ -14,7 +14,7 @@ If no one else needed it, I did—so that my bedroom could be filled with hundre
 
 “Seek first the kingdom of God and His righteousness, and all these things will be added to you.” — Do God’s work first; then, through prayer and petition, present your requests to Him.
 
-# 🎧 Theta Audio MVP
+# 🎧 Theta
 
 **24/7 Christian Prayer & Meditation Application**
 
