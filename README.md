@@ -44,20 +44,30 @@ Click "More info" → "Run anyway" to install safely.
 
 ## ✨ Features
 
+### 🙏 200 Prayers - Complete Library
+- 🌅 **50 Morning Prayers** (5am-11am) - Dawn blessings, new day strength, morning gratitude
+- ☀️ **50 Mid-Day Prayers** (11am-6pm) - Lord's Prayer, Serenity Prayer, healing, love, faith, guidance
+- 🌙 **50 Evening Prayers** (6pm-5am) - Rest, peace, bedtime blessings, nightfall reflections
+- 🗡️ **50 Spiritual Warfare Prayers** - Goliath Mode for whenever you need them - Spiritual Warfare Prayers to fight fire with Fire!
+
 ### Core Features
-- 🙏 **150 Time-Based Prayers** - Morning, neutral, and evening prayers that adapt to time of day
 - ⏱️ **Prayer Intervals** - Choose 3, 5, or 10-minute intervals for consistent practice
 - 🎵 **Background Audio** - Prayers continue playing with screen off (24/7 operation)
 - 🔄 **START/REPEAT Button** - Start prayers or repeat the last one with one button
+- 🚫 **No Duplicates** - Intelligent prevention of consecutive repeated prayers
+
+### Goliath Mode - Spiritual Warfare
+- 🛡️ **50 Warfare Prayers** - Breaking chains, divine protection, authority, victory declarations
+- 🎵 **David Song** - Automatic Psalm 30 - A song of deliverance: battle soundtrack when activated - The psalm begins with a strong declaration of praise to God for saving David from his enemies and delivering him from a near-death experience.
+- 💙 **Baby Blue UI** - Visual indicator when warfare mode is active
+- 🔁 **Toggle On/Off** - Press Deactivate to return to normal mode
 
 ### Advanced Features
 - 🤖 **Guide Me AI** - ChatGPT-4o powered spiritual guidance with comprehensive Christian persona
-- ⏰ **Prayer Alarm Clock** - Daily repeating alarms for consistent prayer practice (Android & iOS Apple)
-- 🚫 **No Duplicates** - Intelligent prevention of consecutive repeated prayers
+- ⏰ **Prayer Alarm Clock** - Daily repeating alarms for consistent prayer practice (Android & iOS)
 - 🎨 **Beautiful UI** - Apple-inspired design with peaceful portrait wallpaper
 - 📖 **What is Theta** - Educational narration about theta brainwave states
 - 🎬 **Intro Screen** - Welcoming first-time experience
-
 ---
 
 ## 🎯 Quality Standard
