@@ -1,4 +1,6 @@
-We humbly present “Theta”, 
+
+
+We humbly present “Theta - Affirmation Warfare" App,
 
 a new Christian prayer and meditation app developed by Fearless Labs, completely free to download and free forever for everyone. (Download link for free Theta Windows & Android apps provided below.) 
 
