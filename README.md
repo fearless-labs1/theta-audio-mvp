@@ -103,7 +103,7 @@ Click "More info" → "Run anyway" to install safely.
 
 ---
 
-## 💡 About Theta
+## 💡 About "Theta - Affirmation Warfare" App,
 
 > *"Theta is the calm before thought — total stillness where your heart rests in God and His power flows through you."*
 
