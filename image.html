@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theta – Downloads</title>
+    <style>
+        :root {
+            --bg-dark: #0b0e13;
+            --theta-blue: #3a5ee8;
+            --theta-light-blue: #6c89ff;
+            --text-light: #dbe1ff;
+            --disabled: #4a4f63;
+        }
+        body {
+            margin: 0;
+            font-family: "Inter", Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        header {
+            text-align: center;
+            padding: 40px 20px 10px;
+        }
+        .logo-img {
+            width: 260px;
+            max-width: 80%;
+            margin-bottom: 10px;
+        }
+        .tagline {
+            font-size: 16px;
+            color: #9aa3c4;
+            margin-top: 5px;
+        }
+        .card {
+            background: #11151c;
+            margin-top: 30px;
+            padding: 35px;
+            border-radius: 14px;
+            width: 90%;
+            max-width: 440px;
+            box-shadow: 0 0 25px rgba(58, 94, 232, 0.25);
+            text-align: center;
+        }
+        h2 {
+            color: var(--theta-light-blue);
+            font-weight: 600;
+        }
+        .btn {
+            display: block;
+            background: var(--theta-blue);
+            padding: 15px 32px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            text-decoration: none;
+            margin: 18px 0;
+            box-shadow: 0 4px 18px rgba(58, 94, 232, 0.45);
+            transition: 0.25s;
+        }
+        .btn:hover {
+            background: var(--theta-light-blue);
+            box-shadow: 0 6px 24px rgba(108, 137, 255, 0.55);
+        }
+        .btn-disabled {
+            background: var(--disabled);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .btn-disabled:hover {
+            background: var(--disabled);
+            box-shadow: none;
+        }
+        footer {
+            margin-top: 50px;
+            padding: 20px;
+            font-size: 13px;
+            color: #7081a7;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <!-- Theta logo via relative path -->
+        <img class="logo-img" src="logo.png" alt="Theta Logo">
+        <div class="tagline">Audio of the Future • Built with Purpose</div>
+    </header>
+    <div class="card">
+        <h2>Download Theta</h2>
+        <p>Select your platform below.</p>
+        <!-- ANDROID BUTTON -->
+        <a class="btn" href="https://github.com/fearless-labs1/theta-audio-mvp/releases/download/v.2/Theta_Android.apk">
+            📱 Download for Android (APK)
+        </a>
+        <!-- WINDOWS BUTTON -->
+        <a class="btn" href="https://github.com/fearless-labs1/theta-audio-mvp/releases/download/v3/ThetaSetup-v3.0.0.exe">
+            🖥️ Download for Windows (EXE)
+        </a>
+        <!-- IOS BUTTON (COMING SOON) -->
+        <a class="btn btn-disabled">
+            🍎 iOS Version – Coming Soon
+        </a>
+        <p style="margin-top:25px; font-size:14px; color:#9aa3c4;">
+            All downloads are delivered securely via GitHub Releases.
+        </p>
+    </div>
+    <footer>
+        © 2025 Theta • Fearless Labs
+    </footer>
+</body>
+</html>
