@@ -1,0 +1,72 @@
+name: theta_audio_mvp
+description: "Theta - Android Production. Prayer audio app with background playback, Goliath Mode, Divine Shuffle, and Guide Me AI."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Audio playback engine
+  audioplayers: ^6.1.0
+  
+  # Background audio service
+  audio_service: ^0.18.12
+  
+  # Video playback
+  video_player: ^2.8.1
+  chewie: ^1.7.5
+  
+  # HTTP requests (for Guide Me API)
+  http: ^1.1.0
+  
+  # Google Fonts (Option 5 "Soft & Spiritual" styling)
+  google_fonts: ^6.1.0
+  
+  # Native splash screen (FIX: Prevents icon showing on white screen at startup)
+  flutter_native_splash: ^2.3.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/app_icon.png"
+
+# NATIVE SPLASH CONFIGURATION
+# Android 12+ FORCES an icon - so we use a SOLID BLACK icon
+# that blends into the black background = INVISIBLE
+flutter_native_splash:
+  color: "#000000"
+  android: true
+  ios: false
+  fullscreen: true
+  image: assets/images/splash_icon_black.png
+  
+  # Android 12+ specific - solid black icon on black background
+  android_12:
+    color: "#000000"
+    image: assets/images/splash_icon_black.png
+    icon_background_color: "#000000"
+
+flutter:
+  uses-material-design: true
+  
+  # Asset configuration
+  assets:
+    # Audio files
+    - assets/audio/
+    - assets/audio/goliath/
+    
+    # Video files
+    - assets/video/
+    
+    # Image files
+    - assets/images/
