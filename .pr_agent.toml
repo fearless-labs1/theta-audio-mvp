@@ -1,0 +1,95 @@
+# Theta Audio MVP - Qodo / PR-Agent configuration
+# Keep this file minimal; override only what we actually use.
+
+[config]
+# Helpful when tuning behaviour: show which configs were used for a tool
+output_relevant_configurations = true
+
+###################################
+# /describe configuration
+###################################
+[pr_description]
+# Have /describe add labels based on its analysis if supported
+publish_labels = true
+
+extra_instructions = """
+You are describing changes to the Theta Audio MVP project, a Christian prayer and meditation app for Windows and Android, with iOS coming later. The app provides 24/7 automated prayer playback, Goliath (warfare) mode, and Guide Me AI spiritual guidance.
+
+When generating a description:
+- Clearly summarise the main purpose of the PR in one or two short paragraphs.
+- Highlight how the changes affect audio playback stability during long-running sessions.
+- Explain any changes to time-based prayer selection (morning / mid-day / evening) and interval logic (3 / 5 / 10 minutes).
+- Call out any changes to Goliath mode behaviour or its visual indicators (baby blue warfare UI, audio, music).
+- Note any changes to Guide Me AI prompts, behaviour, or integration.
+- Mention user-facing UX changes, especially first-launch flow, intro screen, settings, and notifications.
+- Flag anything meaningfully related to future iOS support or cross-platform structure.
+Use concise, non-technical language first, then add technical details for maintainers.
+"""
+
+###################################
+# /review configuration
+###################################
+[pr_reviewer]
+# General behaviour
+num_max_findings = 10
+require_score_review = true
+require_tests_review = true
+require_estimate_effort_to_review = true
+require_todo_scan = true
+
+extra_instructions = """
+You are reviewing the Theta Audio MVP app, a Christian prayer and meditation tool that plays pre-recorded prayers on intervals and offers ChatGPT-4o based spiritual guidance (Guide Me AI).
+
+Prioritise:
+- Stability during long-running audio playback (hours or overnight) on Windows and Android.
+- Correctness of time-based prayer selection across morning, mid-day and evening ranges, including duplicate-prevention and interval handling.
+- Correctness and safety of Goliath warfare mode behaviour, including activation / deactivation, mutual exclusion with normal Theta mode, and UI indicators.
+- Safe, respectful handling of Christian content and Guide Me AI behaviour; avoid patterns that could be manipulative, extreme or theologically confusing.
+- Clear, simple UX for non-technical Christian users: START/REPEAT behaviour, notifications, permissions flows, and error / loading states.
+- Maintainable, readable code that can be extended for iOS without fragile platform-specific hacks.
+
+When giving findings:
+- Focus on issues that could break core flows (install, start, interval playback, Goliath, Guide Me AI).
+- Group related comments and avoid nitpicking unless it impacts clarity or correctness.
+"""
+
+###################################
+# /improve (/code_suggestions) configuration
+###################################
+[pr_code_suggestions]
+commitable_code_suggestions = true
+enable_help_text = true
+num_best_practice_suggestions = 3
+num_code_suggestions_per_chunk = 4
+
+extra_instructions = """
+When suggesting improvements, focus on safe, incremental refactors that improve clarity and reliability for Theta Audio MVP.
+
+Prioritise:
+- Clear separation between audio playback logic, scheduling/interval logic, UI components, and Guide Me AI integration.
+- Safer async / concurrency handling for timers, background playback and notifications.
+- Improved naming, reduced duplication, and smaller, well-scoped functions or components.
+- Cross-platform readiness: patterns that will work cleanly for Windows, Android and future iOS support.
+- Clean, peaceful UI layouts that minimise clutter and keep the focus on prayer and meditation.
+
+Avoid:
+- Large architectural rewrites unless the PR is explicitly labelled as such.
+- Changes that might subtly alter timing, playback intervals or business rules without being clearly documented.
+- Heavy visual changes that distract from the primary purpose of prayer and meditation.
+"""
+
+###################################
+# /ask configuration (for when you use /ask in PR comments)
+###################################
+[pr_question_answerer]
+extra_instructions = """
+When answering questions about a Theta PR, always keep in mind that this is a Christian prayer and meditation app used by potentially vulnerable users.
+
+- Emphasise stability, safety and spiritual care in your answers.
+- Where relevant, suggest manual tests for long-running playback, notifications, Goliath mode, and Guide Me AI interactions.
+- Avoid giving strong real-life prescriptions; instead, keep answers technical and process-focused.
+- When discussing Guide Me AI, assume it should encourage wise, prayerful reflection rather than giving absolute life directives.
+"""
+
+[rag_arguments]
+enable_rag=true
