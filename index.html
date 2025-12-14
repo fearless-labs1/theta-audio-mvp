@@ -6,6 +6,8 @@
     <!-- 🛡️ Sentinel: Added Content-Security-Policy to prevent XSS attacks -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline';">
     <title>Theta – Downloads</title>
+    <!-- ⚡ Bolt: Preload the LCP image to improve page load speed -->
+    <link rel="preload" href="logo.png" as="image">
     <style>
         :root {
             --bg-dark: #0b0e13;
