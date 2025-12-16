@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <!-- 🛡️ Sentinel: Added Content-Security-Policy to prevent XSS attacks -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';">
+    <!-- 🛡️ Sentinel: Added X-Frame-Options to prevent clickjacking -->
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <!-- 🛡️ Sentinel: Added X-Content-Type-Options to prevent MIME-sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <!-- 🛡️ Sentinel: Added Referrer-Policy to control referrer information -->
+    <meta name="referrer-policy" content="no-referrer">
     <title>Theta – Downloads</title>
     <style>
         :root {
