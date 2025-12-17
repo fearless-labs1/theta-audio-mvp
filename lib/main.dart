@@ -423,6 +423,9 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
     } catch (e) {
       debugPrint('⚠️ Could not play dialog audio: $e');
       _restoreMusicVolumeAfterDialog();
+      // Also cancel the listeners we just created to avoid them lingering.
+      _dialogCompleteSubscription?.cancel();
+      _dialogErrorSubscription?.cancel();
     }
   }
 
