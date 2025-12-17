@@ -104,11 +104,13 @@ class ThetaAudioService {
       debugPrint('✅ Release mode set');
       
       // Listen for prayer completion to restore music volume
+      await _prayerCompleteSubscription?.cancel();
       _prayerCompleteSubscription = _player.onPlayerComplete.listen((event) {
         debugPrint('🎵 Prayer playback complete - triggering onPrayerEnd');
         onPrayerEnd?.call();
       });
 
+      await _playerErrorSubscription?.cancel();
       _playerErrorSubscription = _player.onPlayerError.listen((msg) {
         debugPrint('⚠️ Prayer playback error: $msg');
         onPrayerEnd?.call();
