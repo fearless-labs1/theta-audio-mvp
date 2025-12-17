@@ -1556,9 +1556,9 @@ Future<void> _showResponseDialog(String response) async {
   await _restoreMusicAfterIntro();
 }
 
-  void _showErrorDialog(String message) {
+  Future<void> _showErrorDialog(String message) async {
     final ScrollController scrollController = ScrollController();
-    showDialog(
+    await showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.7),
       builder: (context) => Dialog(
