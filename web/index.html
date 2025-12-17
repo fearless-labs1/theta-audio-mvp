@@ -1,124 +1,114 @@
-<!DOCTYPE html><html><head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-<script>
-  // Fallback base href if build-time replacement is missing.
-  (function ensureBaseHref() {
-    var base = document.querySelector('base');
-    if (!base) {
-      base = document.createElement('base');
-      document.head.insertBefore(base, document.head.firstChild);
-    }
-    if (!base.getAttribute('href') || base.getAttribute('href') === '$FLUTTER_BASE_HREF') {
-      base.setAttribute('href', '/');
-    }
-  })();
-</script>
-<base href="$FLUTTER_BASE_HREF">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Base href injection for Flutter web builds -->
+  <script>
+    (function ensureBaseHref() {
+      var base = document.querySelector('base');
+      if (!base) {
+        base = document.createElement('base');
+        document.head.insertBefore(base, document.head.firstChild);
+      }
+      if (!base.getAttribute('href') || base.getAttribute('href') === '$FLUTTER_BASE_HREF') {
+        base.setAttribute('href', '/');
+      }
+    })();
+  </script>
+  <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Theta Audio MVP — Divine Shuffle, Guide Me AI, and prayer playback across web and desktop.">
+  <meta name="theme-color" content="#000000">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="theta_audio_mvp_android">
+  <meta name="apple-mobile-web-app-title" content="Theta Audio">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
 
-  <title>theta_audio_mvp_android</title>
+  <!-- Typography for Soft & Spiritual styling -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Lora:wght@400;600&display=swap" rel="stylesheet">
+
+  <title>Theta Audio</title>
   <link rel="manifest" href="manifest.json">
   <style id="splash-screen-style">
-    html {
-      height: 100%
-    }
-
+    html { height: 100%; }
     body {
       margin: 0;
       min-height: 100%;
-      background-color: #000000;
-          background-size: 100% 100%;
+      background: radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.12), transparent 35%),
+                  radial-gradient(circle at 80% 10%, rgba(255, 214, 165, 0.08), transparent 32%),
+                  #000000;
+      font-family: 'Montserrat', 'Lora', serif;
+      color: #f9f6ef;
     }
-
     .center {
       margin: 0;
       position: absolute;
       top: 50%;
       left: 50%;
-      -ms-transform: translate(-50%, -50%);
       transform: translate(-50%, -50%);
+      text-align: center;
     }
-
-    .contain {
-      display:block;
-      width:100%; height:100%;
-      object-fit: contain;
+    .splash-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #d4af37;
+      margin-top: 12px;
     }
-
-    .stretch {
-      display:block;
-      width:100%; height:100%;
+    .splash-subtitle {
+      font-family: 'Lora', serif;
+      font-size: 13px;
+      opacity: 0.8;
+      margin-top: 6px;
     }
-
-    .cover {
-      display:block;
-      width:100%; height:100%;
-      object-fit: cover;
-    }
-
-    .bottom {
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      -ms-transform: translate(-50%, 0);
-      transform: translate(-50%, 0);
-    }
-
-    .bottomLeft {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-    }
-
-    .bottomRight {
-      position: absolute;
-      bottom: 0;
-      right: 0;
+    .soft-star {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      border: 3px solid #d4af37;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(255, 254, 249, 0.1), rgba(249, 246, 239, 0.08));
+      box-shadow: 0 10px 30px rgba(212, 175, 55, 0.25);
+      color: #000;
+      font-size: 26px;
     }
   </style>
-<script id="splash-screen-script">
-  function removeSplashFromWeb() {
-    var splash = document.getElementById('splash');
-    if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
-    var branding = document.getElementById('splash-branding');
-    if (branding && branding.parentNode) branding.parentNode.removeChild(branding);
-    // Defer background change to next frame to avoid visible flicker.
-    requestAnimationFrame(function () {
-      document.body.style.background = 'transparent';
-    });
-  }
-  // Ensure cleanup even if called multiple times.
-  window.addEventListener('flutter-first-frame', removeSplashFromWeb, { once: true });
-</script>
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+  <script id="splash-screen-script">
+    function removeSplashFromWeb() {
+      var splash = document.getElementById('splash');
+      if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+      requestAnimationFrame(function () {
+        document.body.style.background = 'transparent';
+      });
+    }
+    window.addEventListener('flutter-first-frame', removeSplashFromWeb, { once: true });
+  </script>
 </head>
 <body>
-<!-- Ensure base href script runs before Flutter bootstraps -->
-<script src="flutter_bootstrap.js" defer></script>
+  <div id="splash" class="center">
+    <div class="soft-star">✦</div>
+    <div class="splash-title">Theta Audio</div>
+    <div class="splash-subtitle">Preparing Divine Shuffle &amp; Guide Me AI</div>
+  </div>
 
+  <noscript>
+    <div class="center" style="color: white; padding: 16px;">
+      JavaScript is required to load Theta Audio on the web.
+    </div>
+  </noscript>
 
-</body></html>
+  <!-- Ensure base href script runs before Flutter bootstraps -->
+  <script src="flutter_bootstrap.js" defer></script>
+</body>
+</html>
