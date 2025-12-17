@@ -240,33 +240,6 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
     }
   }
 
-  /// Fade wallpaper into view over 4 seconds (opacity 0→1)
-  void _startWallpaperFadeIn() {
-    debugPrint('🌅 Starting wallpaper fade-in (4 seconds)');
-
-    const fadeSteps = 40;
-    const fadeStepMs = 100; // 4000ms / 40 steps = 100ms per step
-
-    int step = 0;
-    Timer.periodic(const Duration(milliseconds: fadeStepMs), (timer) {
-      step++;
-      if (!mounted || step >= fadeSteps) {
-        timer.cancel();
-        if (mounted) {
-          setState(() {
-            _backgroundOpacity = 1.0;
-          });
-        }
-        debugPrint('🌅 Wallpaper fade-in complete - fully visible');
-        return;
-      }
-
-      setState(() {
-        _backgroundOpacity = step / fadeSteps;
-      });
-    });
-  }
-
   /// NEW: Called when prayer changes (Divine Shuffle sync)
   void _onPrayerChanged(String prayerPath) {
     debugPrint('🔀 Prayer changed: $prayerPath');
