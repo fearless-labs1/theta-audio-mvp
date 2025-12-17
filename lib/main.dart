@@ -401,11 +401,9 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
       // STEP 4: Set volume to MAXIMUM
       await _dialogAudioPlayer.setVolume(1.0);
 
-      // STEP 5: Play dialog audio
-      await _dialogAudioPlayer.play(AssetSource(assetPath));
-      debugPrint('✅ Dialog TTS playing at FULL volume');
-
-      // STEP 6: Listen for completion to restore music volume (single subscription for stability)
+      // STEP 5: Listen for completion to restore music volume
+      // This must be done BEFORE playing to avoid a race condition where the
+      // audio completes before the listener is attached.
       await _dialogCompleteSubscription?.cancel();
       _dialogCompleteSubscription = _dialogAudioPlayer.onPlayerComplete.listen((event) {
         debugPrint('🔔 Dialog TTS complete - restoring music volume');
@@ -418,9 +416,16 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
         _restoreMusicVolumeAfterDialog();
       });
 
+      // STEP 6: Play dialog audio
+      await _dialogAudioPlayer.play(AssetSource(assetPath));
+      debugPrint('✅ Dialog TTS playing at FULL volume');
+
     } catch (e) {
       debugPrint('⚠️ Could not play dialog audio: $e');
       _restoreMusicVolumeAfterDialog();
+      // Also cancel the listeners we just created to avoid them lingering.
+      _dialogCompleteSubscription?.cancel();
+      _dialogErrorSubscription?.cancel();
     }
   }
 
