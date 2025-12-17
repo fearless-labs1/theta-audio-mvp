@@ -19,7 +19,7 @@ Please update the Github README file with the following verbiage: # 🎧 Theta A
 
 **Version:** 1.0.0  
 **Status:** Production Ready  
-**Quality:** 9.6/10 (Isolezelo Certified)
+
 
 Cross-platform prayer audio application with background playback capabilities. Plays pre-recorded prayers at 10-minute intervals, even with the screen off.
 
