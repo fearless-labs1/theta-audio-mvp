@@ -122,6 +122,8 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
 
   // SEPARATE audio player for dialog TTS (What is Theta, Guide Me info)
   final AudioPlayer _dialogAudioPlayer = AudioPlayer();
+  StreamSubscription<void>? _dialogCompleteSubscription;
+  StreamSubscription<String>? _dialogErrorSubscription;
 
   // Background music player (Yeshua / David songs)
   AudioPlayer? _musicPlayer;
@@ -148,6 +150,8 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
   bool _showDivineShuffle = false;
   bool _introComplete = false;
   String? _currentPrayerPath;
+  String? _currentPrayerNumber;
+  String? _currentPrayerName;
   final GlobalKey<DivineShufflePopupState> _divineShuffleKey = GlobalKey();
 
   // Background fade state (white → pitch black)
@@ -245,6 +249,8 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
     debugPrint('🔀 Prayer changed: $prayerPath');
     setState(() {
       _currentPrayerPath = prayerPath;
+      _currentPrayerNumber = PrayerTexts.getPrayerNumber(prayerPath);
+      _currentPrayerName = PrayerTexts.getPrayerName(prayerPath);
     });
   }
 
@@ -395,19 +401,31 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
       // STEP 4: Set volume to MAXIMUM
       await _dialogAudioPlayer.setVolume(1.0);
 
-      // STEP 5: Play dialog audio
-      await _dialogAudioPlayer.play(AssetSource(assetPath));
-      debugPrint('✅ Dialog TTS playing at FULL volume');
-
-      // STEP 6: Listen for completion to restore music volume
-      _dialogAudioPlayer.onPlayerComplete.listen((event) {
+      // STEP 5: Listen for completion to restore music volume
+      // This must be done BEFORE playing to avoid a race condition where the
+      // audio completes before the listener is attached.
+      await _dialogCompleteSubscription?.cancel();
+      _dialogCompleteSubscription = _dialogAudioPlayer.onPlayerComplete.listen((event) {
         debugPrint('🔔 Dialog TTS complete - restoring music volume');
         _restoreMusicVolumeAfterDialog();
       });
 
+      await _dialogErrorSubscription?.cancel();
+      _dialogErrorSubscription = _dialogAudioPlayer.onPlayerError.listen((msg) {
+        debugPrint('⚠️ Dialog playback error: $msg');
+        _restoreMusicVolumeAfterDialog();
+      });
+
+      // STEP 6: Play dialog audio
+      await _dialogAudioPlayer.play(AssetSource(assetPath));
+      debugPrint('✅ Dialog TTS playing at FULL volume');
+
     } catch (e) {
       debugPrint('⚠️ Could not play dialog audio: $e');
       _restoreMusicVolumeAfterDialog();
+      // Also cancel the listeners we just created to avoid them lingering.
+      _dialogCompleteSubscription?.cancel();
+      _dialogErrorSubscription?.cancel();
     }
   }
 
@@ -468,6 +486,9 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
       setState(() {
         _isActive = false;
         _errorMessage = null;
+        _currentPrayerPath = null;
+        _currentPrayerNumber = null;
+        _currentPrayerName = null;
       });
     } catch (e) {
       setState(() {
@@ -617,6 +638,9 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
     setState(() {
       _isGoliathMode = false;
       _isActive = false;
+      _currentPrayerPath = null;
+      _currentPrayerNumber = null;
+      _currentPrayerName = null;
     });
 
     debugPrint('🗡️ Goliath Mode DEACTIVATED');
@@ -665,6 +689,71 @@ class _ThetaHomePageState extends State<ThetaHomePage> {
   bool get _buttonsDisabled {
     if (!_showDivineShuffle) return true; // Also disabled before Divine Shuffle appears
     return !_introComplete;
+  }
+
+  Widget _buildPrayerSyncBadge() {
+    if (_currentPrayerPath == null || _currentPrayerNumber == null || _currentPrayerName == null) {
+      return const SizedBox.shrink();
+    }
+
+    final isGoliath = _currentPrayerNumber!.startsWith('G');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: isGoliath ? _goliathActiveColor : _goldAccent, width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: (isGoliath ? _goliathActiveColor : _goldAccent).withOpacity(0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: (isGoliath ? _goliathActiveColor : _goldAccent).withOpacity(0.15),
+              border: Border.all(color: isGoliath ? _goliathActiveColor : _goldAccent, width: 2),
+            ),
+            child: const Text(
+              '✦',
+              style: TextStyle(fontSize: 18, color: Colors.black),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isGoliath ? 'Spiritual Warfare' : 'Divine Shuffle Synced',
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _darkText,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '#${_currentPrayerNumber!}  ·  ${_currentPrayerName!}',
+                style: GoogleFonts.lora(
+                  fontSize: 12,
+                  height: 1.3,
+                  color: _bodyText,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -1472,57 +1561,61 @@ Future<void> _showResponseDialog(String response) async {
   await _restoreMusicAfterIntro();
 }
 
-  void _showErrorDialog(String message) {
-    showDialog(
+  Future<void> _showErrorDialog(String message) async {
+    final ScrollController scrollController = ScrollController();
+    await showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.7),
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [_warmBackground, _softBackground],
-            ),
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: Colors.red, width: 4),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        child: _buildOption5DialogContent(
+          title: 'Gentle Alert',
+          subtitle: 'SOFT & SPIRITUAL NOTICE',
+          scrollController: scrollController,
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              Text(
-                'Error',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red,
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _goldAccent, width: 3),
+                    ),
+                    child: const Icon(Icons.error_outline, color: _goldAccent, size: 26),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Something needs attention',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: _darkText,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Text(
                 message,
-                style: GoogleFonts.lora(fontSize: 14, color: _bodyText),
-                textAlign: TextAlign.center,
+                style: GoogleFonts.lora(fontSize: 14, color: _bodyText, height: 1.6),
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _goldAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _goldAccent, width: 1.5),
                 ),
                 child: Text(
-                  'OK',
-                  style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
+                  'Take a breath, then try again. If the issue continues, check your connection and keep worshipping.',
+                  style: GoogleFonts.lora(fontSize: 12.5, height: 1.5, color: _bodyText),
                 ),
               ),
             ],
@@ -1530,6 +1623,7 @@ Future<void> _showResponseDialog(String response) async {
         ),
       ),
     );
+    scrollController.dispose();
   }
 
   /// FIX #10: Prayer Intervals Dialog with Option 5 styling
@@ -1800,6 +1894,8 @@ Future<void> _showResponseDialog(String response) async {
     _backgroundFadeTimer?.cancel();
     _statusRefreshTimer?.cancel();
     _audioService.dispose();
+    _dialogCompleteSubscription?.cancel();
+    _dialogErrorSubscription?.cancel();
     _dialogAudioPlayer.dispose();
     _musicPlayer?.dispose();
     _guideMeController.dispose();
@@ -1833,6 +1929,23 @@ Future<void> _showResponseDialog(String response) async {
               child: Container(color: Colors.black),
             ),
           ),
+
+          // LAYER 2.5: Goliath ambience overlay
+          if (_isGoliathMode)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      _goliathActiveColor.withOpacity(0.28),
+                      Colors.black.withOpacity(0.05),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // LAYER 3: Main UI content
           SafeArea(
@@ -1963,6 +2076,12 @@ Future<void> _showResponseDialog(String response) async {
                             ],
                           ),
                         ),
+                      ),
+
+                      // Prayer sync + context
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: _buildPrayerSyncBadge(),
                       ),
 
                       const SizedBox(height: 10),

@@ -56,6 +56,8 @@ class ThetaAudioService {
   Timer? _timer;
   bool _isActive = false;
   String? _currentPrayerPath;
+  StreamSubscription<void>? _prayerCompleteSubscription;
+  StreamSubscription<String>? _playerErrorSubscription;
   
   // Callbacks for UI updates
   Function(bool)? onStatusChanged;
@@ -102,8 +104,15 @@ class ThetaAudioService {
       debugPrint('✅ Release mode set');
       
       // Listen for prayer completion to restore music volume
-      _player.onPlayerComplete.listen((event) {
+      await _prayerCompleteSubscription?.cancel();
+      _prayerCompleteSubscription = _player.onPlayerComplete.listen((event) {
         debugPrint('🎵 Prayer playback complete - triggering onPrayerEnd');
+        onPrayerEnd?.call();
+      });
+
+      await _playerErrorSubscription?.cancel();
+      _playerErrorSubscription = _player.onPlayerError.listen((msg) {
+        debugPrint('⚠️ Prayer playback error: $msg');
         onPrayerEnd?.call();
       });
       
@@ -385,6 +394,8 @@ class ThetaAudioService {
   void dispose() {
     debugPrint('🗑️ Disposing audio service...');
     _timer?.cancel();
+    _prayerCompleteSubscription?.cancel();
+    _playerErrorSubscription?.cancel();
     _player.dispose();
     debugPrint('✅ Disposed');
   }
