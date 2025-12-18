@@ -23,7 +23,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'main.dart';
+import 'package:theta_audio_mvp/app/router.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -461,19 +461,7 @@ class _IntroScreenState extends State<IntroScreen> {
     
     // Navigate to main app with fade transition (4000ms)
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const ThetaHomePage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 4000),
-        ),
-      );
+      Navigator.pushReplacement(context, AppRouter.fadeToHomeReplacement());
     }
     
     debugPrint('✅ Navigation to main app initiated');
