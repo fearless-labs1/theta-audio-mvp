@@ -47,7 +47,7 @@ Cross-platform prayer audio application with background playback capabilities. P
 
 | Platform | Minimum Version | Status |
 |----------|----------------|--------|
-| **iOS** | iPhone 7+ (iOS 12+) | ✅ Production Ready |
+| **iOS** | iPhone 7+ (iOS 12+) | WIP |
 | **Android** | Android 6.0+ (API 23+) | ✅ Production Ready |
 | **Windows** | Windows 10+ (64-bit) | ✅ Production Ready |
 
