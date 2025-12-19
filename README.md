@@ -79,6 +79,22 @@ Cross-platform prayer audio application with background playback capabilities. P
 3. **OpenAI API Key** (for generating prayer audio)
    - Sign up at [platform.openai.com](https://platform.openai.com)
 
+### Container-friendly Flutter/Android setup
+
+If Flutter, the Android SDK, or Linux desktop prerequisites are missing in this environment, run the provisioning script and then validate with `flutter doctor`:
+
+```bash
+# Installs Flutter (stable), Android command-line tools, build-tools 34, and Linux build deps
+FLUTTER_SDK="$HOME/.local/flutter" ANDROID_SDK_ROOT="$HOME/.local/android-sdk" ./scripts/setup_flutter_android.sh
+flutter doctor -v
+```
+
+The script downloads SDKs on demand (no bundled binaries) and prints the environment variables you can add to your shell profile so future shells pick up the new toolchains.
+
+### CI validation
+
+GitHub Actions runs `flutter analyze` and `flutter test` on pushes and pull requests to `main` (see `.github/workflows/ci.yaml`). Run the same checks locally after `flutter pub get` to match CI expectations.
+
 ---
 
 ## 📥 Installation
