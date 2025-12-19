@@ -91,6 +91,10 @@ flutter doctor -v
 
 The script downloads SDKs on demand (no bundled binaries) and prints the environment variables you can add to your shell profile so future shells pick up the new toolchains.
 
+### CI validation
+
+GitHub Actions runs `flutter analyze` and `flutter test` on pushes and pull requests to `main` (see `.github/workflows/ci.yaml`). Run the same checks locally after `flutter pub get` to match CI expectations.
+
 ---
 
 ## 📥 Installation
