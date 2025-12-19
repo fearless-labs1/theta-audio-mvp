@@ -20,6 +20,15 @@ jobs:
           flutter-version-file: 'pubspec.yaml' # or a specific version e.g. '3.16.x'
           cache: true
 
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - name: Install dependencies
         run: flutter pub get
 
