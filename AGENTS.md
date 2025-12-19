@@ -16,4 +16,4 @@
 - For every new logic class (e.g., blocs, controllers, services, use cases), add corresponding unit tests in `test/` mirroring the `lib/` structure.
 
 ## Release Branch Follow-up
-- Create a ticket to add an identical or stricter `AGENTS.md` on the `main` branch (used for releases and the website) so guidance stays in sync.
+- Follow-up is tracked in GitHub issue #24 to add an identical or stricter `AGENTS.md` on the `main` branch (used for releases and the website) so guidance stays in sync.
