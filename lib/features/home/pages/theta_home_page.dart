@@ -750,6 +750,10 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   void _startBackgroundFade() {
     if (_backgroundFadeStarted) return;
     _backgroundFadeStarted = true;
+
+    // Cancel the wallpaper fade-in timer to prevent conflicting animations.
+    _wallpaperFadeTimer?.cancel();
+
     Future.delayed(const Duration(milliseconds: 1300), () {
       if (!mounted) return;
       debugPrint('🌑 Starting background fade to pitch black (4000ms)');
