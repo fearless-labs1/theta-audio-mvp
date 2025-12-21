@@ -18,6 +18,7 @@ ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-"$HOME_DIR/android-sdk"}
 ANDROID_CMDLINE_TOOLS_VERSION=${ANDROID_CMDLINE_TOOLS_VERSION:-"11076708"}
 ANDROID_PLATFORM=${ANDROID_PLATFORM:-"android-34"}
 ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-"34.0.0"}
+FLUTTER_VERSION=${FLUTTER_VERSION:-"3.38.5"}
 
 SUDO_CMD=""
 if [[ $(id -u) -ne 0 ]] && command -v sudo >/dev/null 2>&1; then
@@ -25,6 +26,7 @@ if [[ $(id -u) -ne 0 ]] && command -v sudo >/dev/null 2>&1; then
 fi
 
 log "Using Flutter SDK directory: ${FLUTTER_SDK}"
+log "Using Flutter version: ${FLUTTER_VERSION}"
 log "Using Android SDK directory: ${ANDROID_SDK_ROOT}"
 
 log "Installing Linux build dependencies..."
@@ -42,9 +44,15 @@ log "JAVA_HOME set to ${JAVA_HOME}"
 log "Ensuring Flutter SDK is present..."
 if [[ ! -d "${FLUTTER_SDK}" ]]; then
   require_command git
-  git clone https://github.com/flutter/flutter.git -b stable "${FLUTTER_SDK}"
+  git clone --depth 1 https://github.com/flutter/flutter.git -b "${FLUTTER_VERSION}" "${FLUTTER_SDK}"
 else
   log "Flutter SDK already exists; skipping clone."
+  if [[ -x "${FLUTTER_SDK}/bin/flutter" ]]; then
+    INSTALLED_VERSION="$(${FLUTTER_SDK}/bin/flutter --version | head -n1 | awk '{print $2}')"
+    if [[ "${INSTALLED_VERSION}" != "${FLUTTER_VERSION}" ]]; then
+      log "Warning: Flutter SDK version (${INSTALLED_VERSION}) does not match requested version (${FLUTTER_VERSION})."
+    fi
+  fi
 fi
 
 export PATH="${FLUTTER_SDK}/bin:${PATH}"
