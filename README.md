@@ -498,6 +498,15 @@ flutter pub get
 
 ### Local Development
 
+The CI pipeline provisions Flutter/Android tooling through `scripts/setup_flutter_android.sh`. Run it locally to mirror the CI environment and install the pinned Flutter 3.38.5 toolchain:
+
+```bash
+bash scripts/setup_flutter_android.sh
+export FLUTTER_SDK="$HOME/flutter"
+export ANDROID_SDK_ROOT="$HOME/android-sdk"
+export PATH="$FLUTTER_SDK/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+```
+
 ```bash
 # Start development
 git checkout -b feature/your-feature

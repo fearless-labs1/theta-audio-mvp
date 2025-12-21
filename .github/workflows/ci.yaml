@@ -9,16 +9,25 @@ on:
 jobs:
   analyze-and-test:
     runs-on: ubuntu-latest
+    env:
+      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+      FLUTTER_VERSION: '3.38.5'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version-file: 'pubspec.yaml' # or a specific version e.g. '3.16.x'
-          cache: true
+      - name: Set up Flutter and Android tooling
+        run: bash scripts/setup_flutter_android.sh
+
+      - name: Expose Flutter and Android tools on PATH
+        run: |
+          echo "FLUTTER_SDK=${FLUTTER_SDK}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
 
       - name: Cache pub dependencies
         uses: actions/cache@v4
@@ -37,3 +46,53 @@ jobs:
 
       - name: Run tests
         run: flutter test
+
+  build:
+    name: Build artifacts
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [linux, android]
+    env:
+      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+      FLUTTER_VERSION: '3.38.5'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter and Android tooling
+        run: bash scripts/setup_flutter_android.sh
+
+      - name: Expose Flutter and Android tools on PATH
+        run: |
+          echo "FLUTTER_SDK=${FLUTTER_SDK}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable Linux desktop support
+        if: matrix.target == 'linux'
+        run: flutter config --enable-linux-desktop
+
+      - name: Build release binaries
+        run: |
+          if [[ "${{ matrix.target }}" == "linux" ]]; then
+            flutter build linux --release
+          else
+            flutter build appbundle --release
+          fi
