@@ -10,20 +10,23 @@ jobs:
   analyze-and-test:
     runs-on: ubuntu-latest
     env:
-      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
       FLUTTER_VERSION: '3.38.5'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Define SDK paths
+        run: |
+          echo "FLUTTER_SDK=$RUNNER_TEMP/flutter-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
+
       - name: Cache Flutter/Android SDKs
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.FLUTTER_SDK }}
-            ${{ env.ANDROID_SDK_ROOT }}
+            ${{ runner.temp }}/flutter-sdk
+            ${{ runner.temp }}/android-sdk
           key: ${{ runner.os }}-sdks-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
 
       - name: Set up Flutter and Android tooling
@@ -62,20 +65,23 @@ jobs:
       matrix:
         target: [linux, android]
     env:
-      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
       FLUTTER_VERSION: '3.38.5'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Define SDK paths
+        run: |
+          echo "FLUTTER_SDK=$RUNNER_TEMP/flutter-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
+
       - name: Cache Flutter/Android SDKs
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.FLUTTER_SDK }}
-            ${{ env.ANDROID_SDK_ROOT }}
+            ${{ runner.temp }}/flutter-sdk
+            ${{ runner.temp }}/android-sdk
           key: ${{ runner.os }}-sdks-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
 
       - name: Set up Flutter and Android tooling
