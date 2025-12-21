@@ -79,7 +79,16 @@ export ANDROID_SDK_ROOT
 export PATH="${ANDROID_CMDLINE_DIR}/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
 
 log "Installing Android SDK components (this may take a while)..."
-yes | sdkmanager --licenses > /dev/null
+set +e
+yes | sdkmanager --licenses >/dev/null
+LICENSE_EXIT=$?
+set -e
+
+if [[ ${LICENSE_EXIT} -ne 0 && ${LICENSE_EXIT} -ne 141 ]]; then
+  log "Failed to accept Android SDK licenses (exit code: ${LICENSE_EXIT})."
+  exit ${LICENSE_EXIT}
+fi
+
 sdkmanager --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "cmdline-tools;latest" >/dev/null
 
 log "Configuring Flutter to use the Android SDK..."
