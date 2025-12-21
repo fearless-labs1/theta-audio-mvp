@@ -1,144 +1,98 @@
 name: CI
 
 on:
+  push:
+    branches: [ main ]
   pull_request:
-
-env:
-  FLUTTER_SUPPRESS_ANALYTICS: "true"
+    branches: [ main ]
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [android, ios, windows, linux]
-
-    runs-on: >-
-      ${{ fromJSON('{
-        "ios": "macos-latest",
-        "android": "ubuntu-latest",
-        "windows": "windows-latest",
-        "linux": "ubuntu-latest"
-      }')[matrix.target] }}
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    env:
+      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+      FLUTTER_VERSION: '3.38.5'
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.38.5"
-          cache: true
+      - name: Set up Flutter and Android tooling
+        run: bash scripts/setup_flutter_android.sh
 
-      # ---------- LINUX DESKTOP DEPS ----------
-      - name: Install Linux desktop dependencies
-        if: matrix.target == 'linux'
+      - name: Expose Flutter and Android tools on PATH
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends \
-            clang cmake ninja-build pkg-config libgtk-3-dev libglu1-mesa \
-            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-            gstreamer1.0-libav gstreamer1.0-tools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+          echo "FLUTTER_SDK=${FLUTTER_SDK}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
 
-      # ---------- ANDROID ----------
-      - name: Set up Java (Android)
-        if: matrix.target == 'android'
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      - name: Set up Android SDK (cmdline-tools pinned)
-        if: matrix.target == 'android'
-        uses: android-actions/setup-android@v3
-
-      - name: Cache Gradle
-        if: matrix.target == 'android'
+      - name: Cache pub dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-pub-
 
-      - name: Install Android SDK packages
-        if: matrix.target == 'android'
-        run: |
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
-
-      # ---------- COMMON ----------
-      - name: Flutter pub get
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Test
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
         run: flutter test
 
-      # ---------- BUILDS ----------
-      - name: Build Android APK (release)
-        if: matrix.target == 'android'
-        run: flutter build apk --release
+  build:
+    name: Build artifacts
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [linux, android]
+    env:
+      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+      FLUTTER_VERSION: '3.38.5'
 
-      - name: Build Android App Bundle (release)
-        if: matrix.target == 'android'
-        run: flutter build appbundle --release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Build iOS (no codesign)
-        if: matrix.target == 'ios'
-        run: flutter build ios --release --no-codesign
+      - name: Set up Flutter and Android tooling
+        run: bash scripts/setup_flutter_android.sh
 
-      - name: Build Windows
-        if: matrix.target == 'windows'
-        run: flutter build windows --release
+      - name: Expose Flutter and Android tools on PATH
+        run: |
+          echo "FLUTTER_SDK=${FLUTTER_SDK}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
 
-      - name: Build Linux
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable Linux desktop support
         if: matrix.target == 'linux'
-        run: flutter build linux --release
+        run: flutter config --enable-linux-desktop
 
-      # ---------- ARTIFACTS ----------
-      - name: Upload Android artifacts (APK + AAB)
-        if: matrix.target == 'android'
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-release
-          retention-days: 2
-          if-no-files-found: error
-          path: |
-            build/app/outputs/flutter-apk/*.apk
-            build/app/outputs/bundle/release/*.aab
-
-      - name: Upload iOS artifacts (no codesign)
-        if: matrix.target == 'ios'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-build
-          retention-days: 2
-          if-no-files-found: error
-          path: |
-            build/ios/**
-
-      - name: Upload Windows artifacts
-        if: matrix.target == 'windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-release
-          retention-days: 2
-          if-no-files-found: error
-          path: |
-            build/windows/**
-
-      - name: Upload Linux artifacts
-        if: matrix.target == 'linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-release
-          retention-days: 2
-          if-no-files-found: error
-          path: |
-            build/linux/**
+      - name: Build release binaries
+        run: |
+          if [[ "${{ matrix.target }}" == "linux" ]]; then
+            flutter build linux --release
+          else
+            flutter build appbundle --release
+          fi
