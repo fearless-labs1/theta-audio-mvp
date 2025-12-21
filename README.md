@@ -91,6 +91,8 @@ flutter doctor -v
 
 The script downloads SDKs on demand (no bundled binaries), disables Flutter analytics for non-interactive shells, and prints the environment variables you can add to your shell profile so future shells pick up the new toolchains.
 
+To avoid re-downloading the SDKs across runs, point `FLUTTER_SDK` and `ANDROID_SDK_ROOT` at a persistent directory (for example inside your CI cache or a local `.local/` folder); rerunning `scripts/setup_flutter_android.sh` will reuse the existing installations when those paths already contain the toolchains.
+
 ### CI validation
 
 GitHub Actions runs `flutter analyze` and `flutter test` on pushes and pull requests to `main` (see `.github/workflows/ci.yaml`). Run the same checks locally after `flutter pub get` to match CI expectations.
