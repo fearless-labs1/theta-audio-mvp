@@ -34,6 +34,8 @@ $SUDO_CMD apt-get update -y
 $SUDO_CMD apt-get install -y --no-install-recommends \
   curl git unzip xz-utils zip \
   clang cmake ninja-build pkg-config libgtk-3-dev libglu1-mesa \
+  gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
+  gstreamer1.0-libav gstreamer1.0-tools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
   openjdk-17-jdk
 
 JAVA_BIN=$(command -v javac)
