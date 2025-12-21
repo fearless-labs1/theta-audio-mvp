@@ -1,14 +1,14 @@
-/// Theta Audio MVP - Prayer File Registry (ANDROID PRODUCTION)
-/// 
-/// 150 Time-based prayers organized by time of day:
-/// - Morning (001-050): 5am-11am
-/// - Neutral (051-100): 11am-6pm  
-/// - Evening (101-150): 6pm-5am
-///
-/// Features:
-/// - Time-based selection
-/// - Duplicate prevention (no prayer plays twice in a row)
-/// - getCurrentCategoryName() for status display
+// Theta Audio MVP - Prayer File Registry (ANDROID PRODUCTION)
+//
+// 150 Time-based prayers organized by time of day:
+// - Morning (001-050): 5am-11am
+// - Neutral (051-100): 11am-6pm
+// - Evening (101-150): 6pm-5am
+//
+// Features:
+// - Time-based selection
+// - Duplicate prevention (no prayer plays twice in a row)
+// - getCurrentCategoryName() for status display
 
 import 'dart:math';
 
@@ -178,10 +178,10 @@ class PrayersList {
     'audio/150_nightfall_grace.mp3',
   ];
 
-  /// Get time-based prayer based on current hour with DUPLICATE PREVENTION
+  // Get time-based prayer based on current hour with DUPLICATE PREVENTION
   static String getTimeBasedPrayer() {
     final hour = DateTime.now().hour;
-    
+
     List<String> prayerList;
     if (hour >= 5 && hour < 11) {
       // Morning: 5am-11am
@@ -193,33 +193,33 @@ class PrayersList {
       // Evening: 6pm-5am
       prayerList = eveningPrayers;
     }
-    
+
     // Duplicate prevention: Don't play same prayer twice in a row
     String selectedPrayer;
     int attempts = 0;
     const maxAttempts = 10;
-    
+
     do {
       selectedPrayer = prayerList[_random.nextInt(prayerList.length)];
       attempts++;
     } while (selectedPrayer == _lastPlayedPrayer && attempts < maxAttempts);
-    
+
     _lastPlayedPrayer = selectedPrayer;
     return selectedPrayer;
   }
 
-  /// Get random prayer (alias for getTimeBasedPrayer)
+  // Get random prayer (alias for getTimeBasedPrayer)
   static String getRandomPrayer() {
     return getTimeBasedPrayer();
   }
 
-  /// Get current time category name with emoji for status display
-  /// Returns: "🌅 Morning Prayers" or "☀️ Mid-day Prayers" or "🌙 Evening Prayers"
+  // Get current time category name with emoji for status display
+  // Returns: "🌅 Morning Prayers" or "☀️ Mid-day Prayers" or "🌙 Evening Prayers"
   static String getCurrentCategoryName() {
     final hour = DateTime.now().hour;
     final now = DateTime.now();
     final timeString = '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
-    
+
     if (hour >= 5 && hour < 11) {
       return '🌅 Morning Prayers ($timeString)';
     } else if (hour >= 11 && hour < 18) {
@@ -229,10 +229,11 @@ class PrayersList {
     }
   }
 
-  /// Get total prayer count
-  static int get totalCount => morningPrayers.length + neutralPrayers.length + eveningPrayers.length;
-  
-  /// Reset last played (for mode switching)
+  // Get total prayer count
+  static int get totalCount =>
+      morningPrayers.length + neutralPrayers.length + eveningPrayers.length;
+
+  // Reset last played (for mode switching)
   static void resetLastPlayed() {
     _lastPlayedPrayer = null;
   }

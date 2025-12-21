@@ -46,9 +46,10 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   bool _musicInitialized = false;
 
   // PRESERVED EXACTLY: Volume settings for Android (logarithmic scale)
-  static const double _yeshuaMusicVolume = 0.5;  // 50% for Yeshua (normal)
-  static const double _davidMusicVolume = 0.8;   // 80% for David (louder)
-  static const double _prayerMusicVolume = 0.10; // 10% during prayer (Android logarithmic)
+  static const double _yeshuaMusicVolume = 0.5; // 50% for Yeshua (normal)
+  static const double _davidMusicVolume = 0.8; // 80% for David (louder)
+  static const double _prayerMusicVolume =
+      0.10; // 10% during prayer (Android logarithmic)
   static const double _dialogMusicVolume = 0.05; // 5% during dialog TTS
 
   String _currentMusicPath = 'audio/Yeshua _ song.mp3';
@@ -68,7 +69,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   final GlobalKey<DivineShufflePopupState> _divineShuffleKey = GlobalKey();
 
   // Background fade state (white → pitch black)
-  double _backgroundOpacity = 0.0; // Starts at 0.0 (invisible), fades to 1.0 over 4 seconds
+  double _backgroundOpacity =
+      0.0; // Starts at 0.0 (invisible), fades to 1.0 over 4 seconds
   bool _backgroundFadeStarted = false;
 
   // Status auto-refresh timer
@@ -91,7 +93,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
   Future<void> _initializeApp() async {
     try {
-
       // Initialize audio service
       await _audioService.initialize();
 
@@ -115,7 +116,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       try {
         await _initializeBackgroundMusic();
       } catch (e) {
-        debugPrint('⚠️ Background music initialization failed (non-critical): $e');
+        debugPrint(
+            '⚠️ Background music initialization failed (non-critical): $e');
       }
 
       // Start status auto-refresh timer (every 1 minute)
@@ -145,7 +147,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
           _startBackgroundFade();
         }
       });
-
     } catch (e) {
       // Cleanup on critical failure
       _statusRefreshTimer?.cancel();
@@ -205,7 +206,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       _currentMusicPath = 'audio/Yeshua _ song.mp3';
 
       debugPrint('✅ Background music started (Yeshua song at 50%)');
-
     } catch (e) {
       debugPrint('⚠️ Could not start background music: $e');
     }
@@ -224,7 +224,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
         debugPrint('🔇 Background music paused');
       } else {
         // Restore to correct volume based on mode
-        final currentVolume = _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
+        final currentVolume =
+            _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
         await _musicPlayer!.setVolume(currentVolume);
         await _musicPlayer!.resume();
         setState(() {
@@ -240,7 +241,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   /// PRESERVED: Called when prayer starts - fade music to 10%
   void _onPrayerStart() {
     if (_isMusicPlaying && _musicPlayer != null) {
-      final fromVolume = _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
+      final fromVolume =
+          _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
       _fadeVolume(fromVolume, _prayerMusicVolume, 1000);
       debugPrint('🔉 Music fading to 10% for prayer...');
     }
@@ -251,7 +253,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     if (_isMusicPlaying && _musicPlayer != null) {
       final toVolume = _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
       _fadeVolume(_prayerMusicVolume, toVolume, 1000);
-      debugPrint('🔊 Music fading back to ${_isGoliathMode ? "80%" : "50%"}...');
+      debugPrint(
+          '🔊 Music fading back to ${_isGoliathMode ? "80%" : "50%"}...');
     }
   }
 
@@ -285,7 +288,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
       // STEP 1: Fade music down to 5% FIRST
       if (_isMusicPlaying && _musicPlayer != null) {
-        final fromVolume = _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
+        final fromVolume =
+            _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
         await _fadeVolume(fromVolume, _dialogMusicVolume, 500);
         debugPrint('🔉 Music faded to 5% for dialog TTS');
       }
@@ -317,7 +321,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       // This must be done BEFORE playing to avoid a race condition where the
       // audio completes before the listener is attached.
       await _dialogCompleteSubscription?.cancel();
-      _dialogCompleteSubscription = _dialogAudioPlayer.onPlayerComplete.listen((event) {
+      _dialogCompleteSubscription =
+          _dialogAudioPlayer.onPlayerComplete.listen((event) {
         debugPrint('🔔 Dialog TTS complete - restoring music volume');
         _restoreMusicVolumeAfterDialog();
       });
@@ -331,7 +336,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       // STEP 6: Play dialog audio
       await _dialogAudioPlayer.play(AssetSource(assetPath));
       debugPrint('✅ Dialog TTS playing at FULL volume');
-
     } catch (e) {
       debugPrint('⚠️ Could not play dialog audio: $e');
       _restoreMusicVolumeAfterDialog();
@@ -359,7 +363,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   /// Duck music to 5% for intro TTS (Welcome to Theta, Divine Shuffle, How to Use)
   Future<void> _duckMusicForIntro() async {
     if (_isMusicPlaying && _musicPlayer != null) {
-      final fromVolume = _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
+      final fromVolume =
+          _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
       await _fadeVolume(fromVolume, _dialogMusicVolume, 500);
       debugPrint('🔉 Music ducked to 5% for intro TTS');
     }
@@ -599,12 +604,15 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
   /// Check if buttons should be disabled (during intro)
   bool get _buttonsDisabled {
-    if (!_showDivineShuffle) return true; // Also disabled before Divine Shuffle appears
+    if (!_showDivineShuffle)
+      return true; // Also disabled before Divine Shuffle appears
     return !_introComplete;
   }
 
   Widget _buildPrayerSyncBadge() {
-    if (_currentPrayerPath == null || _currentPrayerNumber == null || _currentPrayerName == null) {
+    if (_currentPrayerPath == null ||
+        _currentPrayerNumber == null ||
+        _currentPrayerName == null) {
       return const SizedBox.shrink();
     }
 
@@ -613,12 +621,14 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: isGoliath ? _goliathActiveColor : _goldAccent, width: 2.5),
+        border: Border.all(
+            color: isGoliath ? _goliathActiveColor : _goldAccent, width: 2.5),
         boxShadow: [
           BoxShadow(
-            color: (isGoliath ? _goliathActiveColor : _goldAccent).withOpacity(0.2),
+            color: (isGoliath ? _goliathActiveColor : _goldAccent)
+                .withValues(alpha: 0.2),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -631,8 +641,11 @@ class _ThetaHomePageState extends State<ThetaHomePage>
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: (isGoliath ? _goliathActiveColor : _goldAccent).withOpacity(0.15),
-              border: Border.all(color: isGoliath ? _goliathActiveColor : _goldAccent, width: 2),
+              color: (isGoliath ? _goliathActiveColor : _goldAccent)
+                  .withValues(alpha: 0.15),
+              border: Border.all(
+                  color: isGoliath ? _goliathActiveColor : _goldAccent,
+                  width: 2),
             ),
             child: const Text(
               '✦',
@@ -699,7 +712,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final answer = data['response'] ?? data['answer'] ?? 'No response received';
+        final answer =
+            data['response'] ?? data['answer'] ?? 'No response received';
 
         _guideMeController.clear();
         _showResponseDialog(answer);
@@ -728,7 +742,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
     int step = 0;
     _wallpaperFadeTimer?.cancel();
-    _wallpaperFadeTimer = Timer.periodic(const Duration(milliseconds: fadeStepMs), (timer) {
+    _wallpaperFadeTimer =
+        Timer.periodic(const Duration(milliseconds: fadeStepMs), (timer) {
       step++;
       if (!mounted || step >= fadeSteps) {
         timer.cancel();
@@ -761,7 +776,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       const fadeStepMs = 100;
       int step = 0;
       _backgroundFadeTimer?.cancel();
-      _backgroundFadeTimer = Timer.periodic(const Duration(milliseconds: fadeStepMs), (timer) {
+      _backgroundFadeTimer =
+          Timer.periodic(const Duration(milliseconds: fadeStepMs), (timer) {
         step++;
         if (!mounted || step >= fadeSteps) {
           timer.cancel();
