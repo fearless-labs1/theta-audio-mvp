@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FLUTTER_VERSION: '3.38.5'
-      FLUTTER_SDK: ${{ env.RUNNER_TEMP }}/flutter-sdk
-      ANDROID_SDK_ROOT: ${{ env.RUNNER_TEMP }}/android-sdk
+      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
 
     steps:
       - name: Checkout repository
@@ -64,8 +64,8 @@ jobs:
         target: [linux, android]
     env:
       FLUTTER_VERSION: '3.38.5'
-      FLUTTER_SDK: ${{ env.RUNNER_TEMP }}/flutter-sdk
-      ANDROID_SDK_ROOT: ${{ env.RUNNER_TEMP }}/android-sdk
+      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
 
     steps:
       - name: Checkout repository
