@@ -56,6 +56,10 @@ else
 fi
 
 export PATH="${FLUTTER_SDK}/bin:${PATH}"
+export FLUTTER_SUPPRESS_ANALYTICS=true
+
+log "Disabling Flutter analytics for non-interactive environments..."
+flutter config --no-analytics >/dev/null
 
 log "Ensuring Android command-line tools are present..."
 ANDROID_CMDLINE_DIR="${ANDROID_SDK_ROOT}/cmdline-tools/latest"

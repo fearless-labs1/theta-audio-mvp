@@ -89,7 +89,7 @@ FLUTTER_SDK="$HOME/.local/flutter" ANDROID_SDK_ROOT="$HOME/.local/android-sdk" .
 flutter doctor -v
 ```
 
-The script downloads SDKs on demand (no bundled binaries) and prints the environment variables you can add to your shell profile so future shells pick up the new toolchains.
+The script downloads SDKs on demand (no bundled binaries), disables Flutter analytics for non-interactive shells, and prints the environment variables you can add to your shell profile so future shells pick up the new toolchains.
 
 ### CI validation
 
