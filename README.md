@@ -95,7 +95,7 @@ To avoid re-downloading the SDKs across runs, point `FLUTTER_SDK` and `ANDROID_S
 
 ### CI validation
 
-GitHub Actions runs `flutter analyze` and `flutter test` on pushes and pull requests to `main` (see `.github/workflows/ci.yaml`). Run the same checks locally after `flutter pub get` to match CI expectations.
+GitHub Actions runs `flutter analyze`, `flutter test`, and release builds for Linux and Android on every push or pull request (any branch) via `.github/workflows/ci.yaml`. Use the **Run workflow** button on the Actions tab (available because `workflow_dispatch` is enabled) or push an empty commit (`git commit --allow-empty -m "Trigger CI" && git push`) to force a CI run when you need to re-verify the Android build without new changes. Run the same checks locally after `flutter pub get` to match CI expectations.
 
 ---
 
