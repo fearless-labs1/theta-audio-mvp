@@ -12,19 +12,25 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FLUTTER_VERSION: '3.38.5'
-      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Resolve SDK paths
+        id: sdk-paths
+        run: |
+          echo "flutter_sdk=${RUNNER_TEMP}/flutter-sdk" >> "$GITHUB_OUTPUT"
+          echo "android_sdk=${RUNNER_TEMP}/android-sdk" >> "$GITHUB_OUTPUT"
+          echo "FLUTTER_SDK=${RUNNER_TEMP}/flutter-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${RUNNER_TEMP}/android-sdk" >> "$GITHUB_ENV"
+
       - name: Cache Flutter/Android SDKs
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.FLUTTER_SDK }}
-            ${{ env.ANDROID_SDK_ROOT }}
+            ${{ steps.sdk-paths.outputs.flutter_sdk }}
+            ${{ steps.sdk-paths.outputs.android_sdk }}
           key: ${{ runner.os }}-sdks-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
 
       - name: Set up Flutter and Android tooling
@@ -32,8 +38,6 @@ jobs:
 
       - name: Expose Flutter and Android tools on PATH
         run: |
-          echo "FLUTTER_SDK=${FLUTTER_SDK}" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
           echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
           echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
@@ -64,19 +68,25 @@ jobs:
         target: [linux, android]
     env:
       FLUTTER_VERSION: '3.38.5'
-      FLUTTER_SDK: ${{ runner.temp }}/flutter-sdk
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Resolve SDK paths
+        id: sdk-paths
+        run: |
+          echo "flutter_sdk=${RUNNER_TEMP}/flutter-sdk" >> "$GITHUB_OUTPUT"
+          echo "android_sdk=${RUNNER_TEMP}/android-sdk" >> "$GITHUB_OUTPUT"
+          echo "FLUTTER_SDK=${RUNNER_TEMP}/flutter-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${RUNNER_TEMP}/android-sdk" >> "$GITHUB_ENV"
+
       - name: Cache Flutter/Android SDKs
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.FLUTTER_SDK }}
-            ${{ env.ANDROID_SDK_ROOT }}
+            ${{ steps.sdk-paths.outputs.flutter_sdk }}
+            ${{ steps.sdk-paths.outputs.android_sdk }}
           key: ${{ runner.os }}-sdks-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
 
       - name: Set up Flutter and Android tooling
@@ -84,8 +94,6 @@ jobs:
 
       - name: Expose Flutter and Android tools on PATH
         run: |
-          echo "FLUTTER_SDK=${FLUTTER_SDK}" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
           echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
           echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
