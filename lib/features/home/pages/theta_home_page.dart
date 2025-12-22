@@ -41,8 +41,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   AudioPlayer? _musicPlayer;
 
   // Background music state
+  @override
   bool _isMusicPlaying = true;
-  bool _musicInitialized = false;
 
   // PRESERVED EXACTLY: Volume settings for Android (logarithmic scale)
   static const double _yeshuaMusicVolume = 0.5; // 50% for Yeshua (normal)
@@ -51,23 +51,29 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       0.10; // 10% during prayer (Android logarithmic)
   static const double _dialogMusicVolume = 0.05; // 5% during dialog TTS
 
-  String _currentMusicPath = 'audio/Yeshua _ song.mp3';
-
   // App state
+  @override
   bool _isActive = false;
+  @override
   bool _isInitialized = false;
+  @override
   String? _errorMessage;
+  @override
   int _selectedInterval = 10;
 
   // Divine Shuffle state - FIX: Start as FALSE, show after 5 second delay
+  @override
   bool _showDivineShuffle = false;
   bool _introComplete = false;
+  @override
   String? _currentPrayerPath;
   String? _currentPrayerNumber;
   String? _currentPrayerName;
+  @override
   final GlobalKey<DivineShufflePopupState> _divineShuffleKey = GlobalKey();
 
   // Background fade state (white → pitch black)
+  @override
   double _backgroundOpacity =
       0.0; // Starts at 0.0 (invisible), fades to 1.0 over 4 seconds
   bool _backgroundFadeStarted = false;
@@ -78,10 +84,13 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   Timer? _backgroundFadeTimer;
 
   // Guide Me
+  @override
   final TextEditingController _guideMeController = TextEditingController();
+  @override
   bool _isLoadingGPTResponse = false;
 
   // Goliath Mode
+  @override
   bool _isGoliathMode = false;
 
   @override
@@ -200,9 +209,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       // Start playing Yeshua song
       await _musicPlayer!.play(AssetSource('audio/Yeshua _ song.mp3'));
 
-      _musicInitialized = true;
       _isMusicPlaying = true;
-      _currentMusicPath = 'audio/Yeshua _ song.mp3';
 
       debugPrint('✅ Background music started (Yeshua song at 50%)');
     } catch (e) {
@@ -211,6 +218,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   }
 
   /// Toggle background music on/off
+  @override
   Future<void> _toggleBackgroundMusic() async {
     if (_musicPlayer == null) return;
 
@@ -281,6 +289,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   }
 
   /// PRESERVED: Fade music for dialog audio (What is Theta, Guide Me info)
+  @override
   Future<void> _playDialogAudioWithMusicFade(String assetPath) async {
     try {
       debugPrint('🎵 Playing dialog audio: $assetPath');
@@ -347,12 +356,14 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   }
 
   /// Stop dialog audio and restore music (called when dialog closes)
+  @override
   Future<void> _stopDialogAudioAndRestoreMusic() async {
     await _dialogAudioPlayer.stop();
     await _restoreMusicVolumeAfterDialog();
   }
 
   /// Duck music to 5% for intro TTS (Welcome to Theta, Divine Shuffle, How to Use)
+  @override
   Future<void> _duckMusicForIntro() async {
     if (_isMusicPlaying && _musicPlayer != null) {
       final fromVolume =
@@ -363,6 +374,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   }
 
   /// Restore music volume after intro TTS finishes
+  @override
   Future<void> _restoreMusicAfterIntro() async {
     if (_isMusicPlaying && _musicPlayer != null) {
       final toVolume = _isGoliathMode ? _davidMusicVolume : _yeshuaMusicVolume;
@@ -389,6 +401,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     }
   }
 
+  @override
   Future<void> _stopTheta() async {
     try {
       await _audioService.stopTheta();
@@ -407,6 +420,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   }
 
   /// START / REPEAT dual function button handler
+  @override
   Future<void> _startOrRepeat() async {
     if (_isActive) {
       // REPEAT current prayer
@@ -426,6 +440,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   // GOLIATH MODE FUNCTIONS
   // ═══════════════════════════════════════════════════════════════════
 
+  @override
   Future<void> _toggleGoliathMode() async {
     if (_isGoliathMode) {
       await _stopGoliathMode();
@@ -449,7 +464,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     }
 
     // Switch to David music
-    _currentMusicPath = 'audio/David.mp3';
 
     if (_musicPlayer != null) {
       try {
@@ -513,7 +527,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     await Future.delayed(const Duration(milliseconds: 500));
 
     // Switch back to Yeshua music at 50%
-    _currentMusicPath = 'audio/Yeshua _ song.mp3';
 
     if (_musicPlayer != null) {
       try {
@@ -573,6 +586,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     }
   }
 
+  @override
   String _getStatusText() {
     if (_isGoliathMode) {
       return 'Goliath Mode: Spiritual Warfare';
@@ -587,6 +601,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   // DIVINE SHUFFLE PHASE 1 COMPLETE CALLBACK
   // ═══════════════════════════════════════════════════════════════════
 
+  @override
   void _onPhase1Complete() {
     debugPrint('🔀 Divine Shuffle Phase 1 complete - buttons now enabled');
     setState(() {
@@ -595,12 +610,15 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   }
 
   /// Check if buttons should be disabled (during intro)
-  bool get _buttonsDisabled {
-    if (!_showDivineShuffle)
-      return true; // Also disabled before Divine Shuffle appears
-    return !_introComplete;
-  }
+    @override
+    bool get _buttonsDisabled {
+      if (!_showDivineShuffle) {
+        return true; // Also disabled before Divine Shuffle appears
+      }
+      return !_introComplete;
+    }
 
+  @override
   Widget _buildPrayerSyncBadge() {
     if (_currentPrayerPath == null ||
         _currentPrayerNumber == null ||
@@ -677,6 +695,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   // GUIDE ME AI FUNCTIONS
   // ═══════════════════════════════════════════════════════════════════
 
+  @override
   Future<void> _sendQuestionToGPT(String question) async {
     final trimmedQuestion = question.trim();
     if (trimmedQuestion.isEmpty) {
@@ -797,7 +816,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     _statusRefreshTimer?.cancel();
     _audioService.dispose();
     _dialogCompleteSubscription?.cancel();
-    _dialogErrorSubscription?.cancel();
     _dialogAudioPlayer.dispose();
     _musicPlayer?.dispose();
     _guideMeController.dispose();

@@ -14,19 +14,18 @@ mixin _HomePageBuild on State<ThetaHomePage> {
   TextEditingController get _guideMeController;
   bool get _showDivineShuffle;
 
-  Future<void> Function() get _showAboutDialog;
-  Future<void> Function() get _showIntervalSelection;
-  Future<void> Function() get _showGuideMeInfo;
-  Future<void> Function() get _startOrRepeat;
-  Future<void> Function() get _toggleGoliathMode;
-  Future<void> Function() get _stopTheta;
-  Future<void> Function() get _toggleBackgroundMusic;
-  Future<void> Function() get _duckMusicForIntro;
-  Future<void> Function() get _restoreMusicAfterIntro;
-  void Function() get _onPhase1Complete;
-  Future<void> Function(String question) get _sendQuestionToGPT;
-  String Function() get _getStatusText;
-  Widget Function() get _buildPrayerSyncBadge;
+  Future<void> _showAboutDialog();
+  Future<void> _showIntervalSelection();
+  Future<void> _showGuideMeInfo();
+  Future<void> _startOrRepeat();
+  Future<void> _toggleGoliathMode();
+  Future<void> _stopTheta();
+  Future<void> _duckMusicForIntro();
+  Future<void> _restoreMusicAfterIntro();
+  void _onPhase1Complete();
+  Future<void> _sendQuestionToGPT(String question);
+  String _getStatusText();
+  Widget _buildPrayerSyncBadge();
   Widget buildHomePage(BuildContext context) {
     return Scaffold(
       body: Stack(
