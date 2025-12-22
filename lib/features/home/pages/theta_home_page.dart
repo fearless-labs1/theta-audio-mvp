@@ -34,6 +34,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   final ThetaAudioService _audioService = ThetaAudioService();
 
   // SEPARATE audio player for dialog TTS (What is Theta, Guide Me info)
+  @override
   final AudioPlayer _dialogAudioPlayer = AudioPlayer();
   StreamSubscription<void>? _dialogCompleteSubscription;
 
@@ -210,7 +211,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       await _musicPlayer!.play(AssetSource('audio/Yeshua _ song.mp3'));
 
       _isMusicPlaying = true;
-
       debugPrint('✅ Background music started (Yeshua song at 50%)');
     } catch (e) {
       debugPrint('⚠️ Could not start background music: $e');
@@ -463,8 +463,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       await _musicPlayer!.stop();
     }
 
-    // Switch to david music
-
+    // Switch to David music
     if (_musicPlayer != null) {
       try {
         await _musicPlayer!.setAudioContext(AudioContext(
