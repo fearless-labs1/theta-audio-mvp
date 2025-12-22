@@ -1,6 +1,6 @@
 part of 'theta_home_page.dart';
 
-mixin _DialogBuilders on _ThetaHomePageState {
+mixin _DialogBuilders on State<ThetaHomePage> {
   // ═══════════════════════════════════════════════════════════════════
   // OPTION 5 STYLED DIALOGS - ALL DIALOGS USE THIS STYLING
   // ═══════════════════════════════════════════════════════════════════
