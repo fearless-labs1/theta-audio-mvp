@@ -1,6 +1,6 @@
 part of 'theta_home_page.dart';
 
-mixin _HomePageBuild on State<ThetaHomePage> {
+mixin _HomePageBuild on _DialogBuilders {
   // Members provided by _ThetaHomePageState
   double get _backgroundOpacity;
   bool get _isGoliathMode;
@@ -14,14 +14,9 @@ mixin _HomePageBuild on State<ThetaHomePage> {
   TextEditingController get _guideMeController;
   bool get _showDivineShuffle;
 
-  Future<void> _showAboutDialog();
-  Future<void> _showIntervalSelection();
-  Future<void> _showGuideMeInfo();
   Future<void> _startOrRepeat();
   Future<void> _toggleGoliathMode();
   Future<void> _stopTheta();
-  Future<void> _duckMusicForIntro();
-  Future<void> _restoreMusicAfterIntro();
   void _onPhase1Complete();
   Future<void> _sendQuestionToGPT(String question);
   String _getStatusText();

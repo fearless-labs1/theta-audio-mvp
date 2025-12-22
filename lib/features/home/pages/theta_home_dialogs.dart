@@ -217,7 +217,6 @@ mixin _DialogBuilders on State<ThetaHomePage> {
   }
 
   /// FIX #7: "What is Theta" Dialog with Option 5 styling and 350000ms auto-scroll
-  // ignore: unused_element
   Future<void> _showAboutDialog() async {
     await _playDialogAudioWithMusicFade('audio/what_is_theta.mp3');
 
@@ -597,7 +596,6 @@ mixin _DialogBuilders on State<ThetaHomePage> {
   }
 
   /// FIX #9: Guide Me Info Dialog with Option 5 styling and auto-scroll
-  // ignore: unused_element
   Future<void> _showGuideMeInfo() async {
     await _playDialogAudioWithMusicFade('audio/guide_me_info.mp3');
 
@@ -928,7 +926,6 @@ mixin _DialogBuilders on State<ThetaHomePage> {
   }
 
   /// FIX #10: Prayer Intervals Dialog with Option 5 styling
-  // ignore: unused_element
   Future<void> _showIntervalSelection() async {
     await showDialog(
       context: context,
