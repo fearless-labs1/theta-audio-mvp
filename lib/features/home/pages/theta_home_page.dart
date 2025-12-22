@@ -463,7 +463,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       await _musicPlayer!.stop();
     }
 
-    // Switch to David music
+    // Switch to david music
 
     if (_musicPlayer != null) {
       try {
@@ -527,7 +527,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     await Future.delayed(const Duration(milliseconds: 500));
 
     // Switch back to Yeshua music at 50%
-
     if (_musicPlayer != null) {
       try {
         await _musicPlayer!.setAudioContext(AudioContext(
@@ -610,13 +609,13 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   }
 
   /// Check if buttons should be disabled (during intro)
-    @override
-    bool get _buttonsDisabled {
-      if (!_showDivineShuffle) {
-        return true; // Also disabled before Divine Shuffle appears
-      }
-      return !_introComplete;
+  @override
+  bool get _buttonsDisabled {
+    if (!_showDivineShuffle) {
+      return true; // Also disabled before Divine Shuffle appears
     }
+    return !_introComplete;
+  }
 
   @override
   Widget _buildPrayerSyncBadge() {
