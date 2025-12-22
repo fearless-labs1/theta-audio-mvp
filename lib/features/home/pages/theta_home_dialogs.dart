@@ -2,6 +2,7 @@ part of 'theta_home_page.dart';
 
 mixin _DialogBuilders on State<ThetaHomePage> {
   // Members provided by _ThetaHomePageState
+  AudioPlayer get _dialogAudioPlayer;
   Future<void> _stopDialogAudioAndRestoreMusic();
   Future<void> _playDialogAudioWithMusicFade(String assetPath);
   Future<void> _duckMusicForIntro();
