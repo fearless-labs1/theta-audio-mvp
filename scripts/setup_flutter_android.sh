@@ -96,15 +96,20 @@ export PATH="${ANDROID_CMDLINE_DIR}/bin:${ANDROID_SDK_ROOT}/platform-tools:${PAT
 
 log "Installing Android SDK components (this may take a while)..."
 LICENSE_LOG=$(mktemp)
-license_exit=0
+license_exit=1
 for attempt in 1 2 3; do
   set +e
-  yes | sdkmanager --licenses >/dev/null 2>"${LICENSE_LOG}"
+  set +o pipefail
+  yes | sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --licenses >"${LICENSE_LOG}" 2>&1
   license_exit=$?
+  set -o pipefail
   set -e
 
-  if [[ ${license_exit} -eq 0 || ${license_exit} -eq 141 ]]; then
+  if grep -q "All SDK package licenses accepted" "${LICENSE_LOG}"; then
     license_exit=0
+  fi
+
+  if [[ ${license_exit} -eq 0 ]]; then
     break
   fi
 
@@ -120,7 +125,7 @@ fi
 
 rm -f "${LICENSE_LOG}"
 
-sdkmanager --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "cmdline-tools;latest" >/dev/null
+sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "cmdline-tools;latest" >/dev/null
 
 log "Configuring Flutter to use the Android SDK..."
 flutter config --android-sdk "${ANDROID_SDK_ROOT}" >/dev/null
