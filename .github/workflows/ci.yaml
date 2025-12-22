@@ -14,6 +14,7 @@ jobs:
       FLUTTER_VERSION: '3.38.5'
       FLUTTER_SDK: ${{ github.workspace }}/.flutter-sdk
       ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+      SKIP_ANDROID: '1'
 
     steps:
       - name: Checkout repository
@@ -33,8 +34,10 @@ jobs:
       - name: Expose Flutter and Android tools on PATH
         run: |
           echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
-          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+          if [[ "${SKIP_ANDROID}" != "1" ]]; then
+            echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+            echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+          fi
 
       - name: Cache pub dependencies
         uses: actions/cache@v4
@@ -64,10 +67,15 @@ jobs:
       FLUTTER_VERSION: '3.38.5'
       FLUTTER_SDK: ${{ github.workspace }}/.flutter-sdk
       ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+      SKIP_ANDROID: '1'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Enable Android SDK installation for Android builds
+        if: matrix.target == 'android'
+        run: echo "SKIP_ANDROID=0" >> "$GITHUB_ENV"
 
       - name: Cache Flutter/Android SDKs
         uses: actions/cache@v4
@@ -83,8 +91,10 @@ jobs:
       - name: Expose Flutter and Android tools on PATH
         run: |
           echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
-          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+          if [[ "${SKIP_ANDROID}" != "1" ]]; then
+            echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+            echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+          fi
 
       - name: Cache pub dependencies
         uses: actions/cache@v4

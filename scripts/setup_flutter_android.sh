@@ -18,6 +18,7 @@ ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-"$HOME_DIR/android-sdk"}
 ANDROID_CMDLINE_TOOLS_VERSION=${ANDROID_CMDLINE_TOOLS_VERSION:-"11076708"}
 ANDROID_PLATFORM=${ANDROID_PLATFORM:-"android-34"}
 ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-"34.0.0"}
+SKIP_ANDROID=${SKIP_ANDROID:-"0"}
 FLUTTER_VERSION=${FLUTTER_VERSION:-"3.38.5"}
 
 SUDO_CMD=""
@@ -28,6 +29,7 @@ fi
 log "Using Flutter SDK directory: ${FLUTTER_SDK}"
 log "Using Flutter version: ${FLUTTER_VERSION}"
 log "Using Android SDK directory: ${ANDROID_SDK_ROOT}"
+log "SKIP_ANDROID flag set to: ${SKIP_ANDROID}"
 
 log "Installing Linux build dependencies..."
 $SUDO_CMD apt-get update -y
@@ -63,6 +65,18 @@ export FLUTTER_SUPPRESS_ANALYTICS=true
 log "Disabling Flutter analytics for non-interactive environments..."
 flutter config --no-analytics >/dev/null
 
+if [[ "${SKIP_ANDROID}" == "1" ]]; then
+  log "SKIP_ANDROID=1 detected; skipping Android SDK installation."
+  flutter precache --linux --web >/dev/null
+
+  log "Setup complete. Add the following to your shell profile to persist PATH changes:"
+  cat <<PROFILE
+export FLUTTER_SDK="${FLUTTER_SDK}"
+export PATH="\${FLUTTER_SDK}/bin:\${PATH}"
+PROFILE
+  exit 0
+fi
+
 log "Ensuring Android command-line tools are present..."
 ANDROID_CMDLINE_DIR="${ANDROID_SDK_ROOT}/cmdline-tools/latest"
 if [[ ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
@@ -81,15 +95,30 @@ export ANDROID_SDK_ROOT
 export PATH="${ANDROID_CMDLINE_DIR}/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
 
 log "Installing Android SDK components (this may take a while)..."
-set +e
-yes | sdkmanager --licenses >/dev/null
-LICENSE_EXIT=$?
-set -e
+LICENSE_LOG=$(mktemp)
+license_exit=0
+for attempt in 1 2 3; do
+  set +e
+  yes | sdkmanager --licenses >/dev/null 2>"${LICENSE_LOG}"
+  license_exit=$?
+  set -e
 
-if [[ ${LICENSE_EXIT} -ne 0 && ${LICENSE_EXIT} -ne 141 ]]; then
-  log "Failed to accept Android SDK licenses (exit code: ${LICENSE_EXIT})."
-  exit ${LICENSE_EXIT}
+  if [[ ${license_exit} -eq 0 || ${license_exit} -eq 141 ]]; then
+    license_exit=0
+    break
+  fi
+
+  log "License acceptance attempt ${attempt} failed (exit ${license_exit}); retrying..."
+  sleep 2
+done
+
+if [[ ${license_exit} -ne 0 ]]; then
+  log "Failed to accept Android SDK licenses after retries (last exit: ${license_exit}). Output:"
+  cat "${LICENSE_LOG}" || true
+  exit ${license_exit}
 fi
+
+rm -f "${LICENSE_LOG}"
 
 sdkmanager --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "cmdline-tools;latest" >/dev/null
 

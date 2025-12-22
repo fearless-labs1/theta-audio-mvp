@@ -91,6 +91,14 @@ flutter doctor -v
 
 The script downloads SDKs on demand (no bundled binaries), disables Flutter analytics for non-interactive shells, and prints the environment variables you can add to your shell profile so future shells pick up the new toolchains.
 
+To skip Android tooling (useful for Linux-only builds or quick `flutter analyze`/`flutter test` runs), set `SKIP_ANDROID=1`:
+
+```bash
+SKIP_ANDROID=1 FLUTTER_SDK="$HOME/.local/flutter" ./scripts/setup_flutter_android.sh
+```
+
+This still installs Linux dependencies and precaches desktop/web artifacts while avoiding the Android SDK download.
+
 To avoid re-downloading the SDKs across runs, point `FLUTTER_SDK` and `ANDROID_SDK_ROOT` at a persistent directory (for example inside your CI cache or a local `.local/` folder); rerunning `scripts/setup_flutter_android.sh` will reuse the existing installations when those paths already contain the toolchains.
 
 ### CI validation
