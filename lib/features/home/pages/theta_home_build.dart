@@ -20,7 +20,6 @@ mixin _HomePageBuild on State<ThetaHomePage> {
   Future<void> _startOrRepeat();
   Future<void> _toggleGoliathMode();
   Future<void> _stopTheta();
-  Future<void> _toggleBackgroundMusic();
   Future<void> _duckMusicForIntro();
   Future<void> _restoreMusicAfterIntro();
   void _onPhase1Complete();
