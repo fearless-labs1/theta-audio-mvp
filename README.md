@@ -1,4 +1,4 @@
-# theta_audio_mvp_android
+# theta_audio_mvp
 
 A new Flutter project.
 
