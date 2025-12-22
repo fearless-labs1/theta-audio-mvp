@@ -210,6 +210,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       await _musicPlayer!.play(AssetSource('audio/Yeshua _ song.mp3'));
 
       _isMusicPlaying = true;
+
       debugPrint('✅ Background music started (Yeshua song at 50%)');
     } catch (e) {
       debugPrint('⚠️ Could not start background music: $e');
@@ -462,7 +463,8 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       await _musicPlayer!.stop();
     }
 
-    // Switch to David music
+    // Switch to david music
+
     if (_musicPlayer != null) {
       try {
         await _musicPlayer!.setAudioContext(AudioContext(
