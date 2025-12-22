@@ -36,7 +36,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   // SEPARATE audio player for dialog TTS (What is Theta, Guide Me info)
   final AudioPlayer _dialogAudioPlayer = AudioPlayer();
   StreamSubscription<void>? _dialogCompleteSubscription;
-  StreamSubscription<String>? _dialogErrorSubscription;
 
   // Background music player (Yeshua / David songs)
   AudioPlayer? _musicPlayer;
@@ -327,12 +326,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
         _restoreMusicVolumeAfterDialog();
       });
 
-      await _dialogErrorSubscription?.cancel();
-      _dialogErrorSubscription = _dialogAudioPlayer.onPlayerError.listen((msg) {
-        debugPrint('⚠️ Dialog playback error: $msg');
-        _restoreMusicVolumeAfterDialog();
-      });
-
       // STEP 6: Play dialog audio
       await _dialogAudioPlayer.play(AssetSource(assetPath));
       debugPrint('✅ Dialog TTS playing at FULL volume');
@@ -341,7 +334,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
       _restoreMusicVolumeAfterDialog();
       // Also cancel the listeners we just created to avoid them lingering.
       _dialogCompleteSubscription?.cancel();
-      _dialogErrorSubscription?.cancel();
     }
   }
 
@@ -805,7 +797,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     _statusRefreshTimer?.cancel();
     _audioService.dispose();
     _dialogCompleteSubscription?.cancel();
-    _dialogErrorSubscription?.cancel();
     _dialogAudioPlayer.dispose();
     _musicPlayer?.dispose();
     _guideMeController.dispose();

@@ -1,6 +1,16 @@
 part of 'theta_home_page.dart';
 
-mixin _DialogBuilders on _ThetaHomePageState {
+mixin _DialogBuilders on State<ThetaHomePage> {
+  // Members provided by _ThetaHomePageState
+  AudioPlayer get _dialogAudioPlayer;
+  Future<void> _stopDialogAudioAndRestoreMusic();
+  Future<void> _playDialogAudioWithMusicFade(String assetPath);
+  Future<void> _duckMusicForIntro();
+  Future<void> _restoreMusicAfterIntro();
+  Future<void> _toggleBackgroundMusic();
+  bool get _isMusicPlaying;
+  int get _selectedInterval;
+  set _selectedInterval(int minutes);
   // ═══════════════════════════════════════════════════════════════════
   // OPTION 5 STYLED DIALOGS - ALL DIALOGS USE THIS STYLING
   // ═══════════════════════════════════════════════════════════════════

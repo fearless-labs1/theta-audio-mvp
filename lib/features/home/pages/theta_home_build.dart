@@ -1,6 +1,32 @@
 part of 'theta_home_page.dart';
 
 mixin _HomePageBuild on State<ThetaHomePage> {
+  // Members provided by _ThetaHomePageState
+  double get _backgroundOpacity;
+  bool get _isGoliathMode;
+  bool get _buttonsDisabled;
+  GlobalKey<DivineShufflePopupState> get _divineShuffleKey;
+  String? get _currentPrayerPath;
+  bool get _isActive;
+  bool get _isInitialized;
+  String? get _errorMessage;
+  bool get _isLoadingGPTResponse;
+  TextEditingController get _guideMeController;
+  bool get _showDivineShuffle;
+
+  Future<void> _showAboutDialog();
+  Future<void> _showIntervalSelection();
+  Future<void> _showGuideMeInfo();
+  Future<void> _startOrRepeat();
+  Future<void> _toggleGoliathMode();
+  Future<void> _stopTheta();
+  Future<void> _toggleBackgroundMusic();
+  Future<void> _duckMusicForIntro();
+  Future<void> _restoreMusicAfterIntro();
+  void _onPhase1Complete();
+  Future<void> _sendQuestionToGPT(String question);
+  String _getStatusText();
+  Widget _buildPrayerSyncBadge();
   Widget buildHomePage(BuildContext context) {
     return Scaffold(
       body: Stack(
