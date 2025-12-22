@@ -33,8 +33,8 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      _goliathActiveColor.withOpacity(0.28),
-                      Colors.black.withOpacity(0.05),
+                      _goliathActiveColor.withValues(alpha: 0.28),
+                      Colors.black.withValues(alpha: 0.05),
                     ],
                   ),
                 ),
@@ -47,7 +47,8 @@ mixin _HomePageBuild on State<ThetaHomePage> {
               children: [
                 // TOP BUTTONS ROW - Light grey buttons with Google Fonts
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
                       // What is Theta button
@@ -69,7 +70,9 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                             style: GoogleFonts.montserrat(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: _buttonsDisabled ? Colors.grey[600] : Colors.black,
+                              color: _buttonsDisabled
+                                  ? Colors.grey[600]
+                                  : Colors.black,
                             ),
                           ),
                         ),
@@ -78,7 +81,8 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                       // Prayer Intervals button
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: _buttonsDisabled ? null : _showIntervalSelection,
+                          onPressed:
+                              _buttonsDisabled ? null : _showIntervalSelection,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey[300],
                             disabledBackgroundColor: Colors.grey[400],
@@ -94,7 +98,9 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                             style: GoogleFonts.montserrat(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: _buttonsDisabled ? Colors.grey[600] : Colors.black,
+                              color: _buttonsDisabled
+                                  ? Colors.grey[600]
+                                  : Colors.black,
                             ),
                           ),
                         ),
@@ -125,7 +131,9 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                           ),
                         )
                       else
-                        const Expanded(child: SizedBox()), // Spacer keeps bottom elements in position
+                        const Expanded(
+                            child:
+                                SizedBox()), // Spacer keeps bottom elements in position
 
                       // Aesthetic gap below Divine Shuffle
                       const SizedBox(height: 8),
@@ -134,7 +142,8 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.grey[300],
                             borderRadius: BorderRadius.circular(20),
@@ -187,10 +196,11 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(25),
-                          border: Border.all(color: Colors.grey[400]!, width: 1.5),
+                          border:
+                              Border.all(color: Colors.grey[400]!, width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -202,15 +212,19 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                             SizedBox(
                               width: 100,
                               child: ElevatedButton(
-                                onPressed: _buttonsDisabled ? null : _showGuideMeInfo,
+                                onPressed:
+                                    _buttonsDisabled ? null : _showGuideMeInfo,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: _buttonsDisabled ? Colors.grey : Colors.black,
+                                  backgroundColor: _buttonsDisabled
+                                      ? Colors.grey
+                                      : Colors.black,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(25),
                                   ),
                                   elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -231,7 +245,8 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                             // Text input field (right ~70%)
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
                                 child: TextField(
                                   controller: _guideMeController,
                                   enabled: !_buttonsDisabled,
@@ -242,11 +257,13 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                                       color: Colors.grey,
                                     ),
                                     border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        vertical: 12),
                                   ),
                                   style: GoogleFonts.lora(fontSize: 12),
                                   onSubmitted: (value) {
-                                    if (!_isLoadingGPTResponse && !_buttonsDisabled) {
+                                    if (!_isLoadingGPTResponse &&
+                                        !_buttonsDisabled) {
                                       _sendQuestionToGPT(value);
                                     }
                                   },
@@ -256,10 +273,13 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                             // Magnifying glass button
                             IconButton(
                               icon: const Icon(Icons.search, size: 20),
-                              color: _buttonsDisabled ? Colors.grey : Colors.black,
-                              onPressed: (_isLoadingGPTResponse || _buttonsDisabled)
-                                  ? null
-                                  : () => _sendQuestionToGPT(_guideMeController.text),
+                              color:
+                                  _buttonsDisabled ? Colors.grey : Colors.black,
+                              onPressed:
+                                  (_isLoadingGPTResponse || _buttonsDisabled)
+                                      ? null
+                                      : () => _sendQuestionToGPT(
+                                          _guideMeController.text),
                               padding: const EdgeInsets.all(8),
                               constraints: const BoxConstraints(),
                             ),
@@ -274,7 +294,8 @@ mixin _HomePageBuild on State<ThetaHomePage> {
 
                 // BOTTOM BUTTONS SECTION - All with Google Fonts
                 Container(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 30),
+                  padding:
+                      const EdgeInsets.only(left: 16, right: 16, bottom: 30),
                   child: Column(
                     children: [
                       // Row 1: START/REPEAT and STOP buttons
@@ -284,11 +305,14 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                           // START / REPEAT button
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: (_isGoliathMode || _buttonsDisabled) ? null : _startOrRepeat,
+                              onPressed: (_isGoliathMode || _buttonsDisabled)
+                                  ? null
+                                  : _startOrRepeat,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.grey[300],
                                 disabledBackgroundColor: Colors.grey[400],
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
@@ -297,14 +321,22 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.play_arrow, size: 22, color: (_isGoliathMode || _buttonsDisabled) ? Colors.grey : Colors.green),
+                                  Icon(Icons.play_arrow,
+                                      size: 22,
+                                      color:
+                                          (_isGoliathMode || _buttonsDisabled)
+                                              ? Colors.grey
+                                              : Colors.green),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Start / Repeat',
                                     style: GoogleFonts.montserrat(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
-                                      color: (_isGoliathMode || _buttonsDisabled) ? Colors.grey : Colors.black,
+                                      color:
+                                          (_isGoliathMode || _buttonsDisabled)
+                                              ? Colors.grey
+                                              : Colors.black,
                                     ),
                                   ),
                                 ],
@@ -317,11 +349,16 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                           // STOP THETA button
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: (!_isActive || _isGoliathMode || _buttonsDisabled) ? null : _stopTheta,
+                              onPressed: (!_isActive ||
+                                      _isGoliathMode ||
+                                      _buttonsDisabled)
+                                  ? null
+                                  : _stopTheta,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.grey[300],
                                 disabledBackgroundColor: Colors.grey[400],
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
@@ -330,14 +367,24 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.stop, size: 22, color: (_isActive && !_isGoliathMode && !_buttonsDisabled) ? Colors.red : Colors.grey),
+                                  Icon(Icons.stop,
+                                      size: 22,
+                                      color: (_isActive &&
+                                              !_isGoliathMode &&
+                                              !_buttonsDisabled)
+                                          ? Colors.red
+                                          : Colors.grey),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Stop Theta',
                                     style: GoogleFonts.montserrat(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
-                                      color: (_isActive && !_isGoliathMode && !_buttonsDisabled) ? Colors.black : Colors.grey,
+                                      color: (_isActive &&
+                                              !_isGoliathMode &&
+                                              !_buttonsDisabled)
+                                          ? Colors.black
+                                          : Colors.grey,
                                     ),
                                   ),
                                 ],
@@ -353,9 +400,12 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                       SizedBox(
                         width: 180,
                         child: ElevatedButton(
-                          onPressed: _buttonsDisabled ? null : _toggleGoliathMode,
+                          onPressed:
+                              _buttonsDisabled ? null : _toggleGoliathMode,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _isGoliathMode ? _goliathActiveColor : Colors.grey[300],
+                            backgroundColor: _isGoliathMode
+                                ? _goliathActiveColor
+                                : Colors.grey[300],
                             disabledBackgroundColor: Colors.grey[400],
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -371,7 +421,9 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                                 size: 22,
                                 color: _buttonsDisabled
                                     ? Colors.grey[600]
-                                    : (_isGoliathMode ? Colors.white : Colors.black),
+                                    : (_isGoliathMode
+                                        ? Colors.white
+                                        : Colors.black),
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -381,7 +433,9 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                                   fontWeight: FontWeight.w600,
                                   color: _buttonsDisabled
                                       ? Colors.grey[600]
-                                      : (_isGoliathMode ? Colors.white : Colors.black),
+                                      : (_isGoliathMode
+                                          ? Colors.white
+                                          : Colors.black),
                                 ),
                               ),
                             ],
@@ -398,7 +452,7 @@ mixin _HomePageBuild on State<ThetaHomePage> {
           // Loading indicator for Guide Me API calls
           if (_isLoadingGPTResponse)
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -409,7 +463,8 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                     const SizedBox(height: 16),
                     Text(
                       'Seeking guidance from Scripture...',
-                      style: GoogleFonts.lora(color: Colors.white, fontSize: 16),
+                      style:
+                          GoogleFonts.lora(color: Colors.white, fontSize: 16),
                     ),
                   ],
                 ),
@@ -431,7 +486,8 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                 ),
                 child: Text(
                   _errorMessage!,
-                  style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.montserrat(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -440,16 +496,19 @@ mixin _HomePageBuild on State<ThetaHomePage> {
           // Initialization loading
           if (!_isInitialized && _errorMessage == null)
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                    const CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.white)),
                     const SizedBox(height: 16),
                     Text(
                       'Initializing Theta...',
-                      style: GoogleFonts.lora(color: Colors.white, fontSize: 16),
+                      style:
+                          GoogleFonts.lora(color: Colors.white, fontSize: 16),
                     ),
                   ],
                 ),

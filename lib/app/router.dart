@@ -19,7 +19,8 @@ class AppRouter {
 
   static PageRouteBuilder<dynamic> _fadeToHomeRoute() {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => const ThetaHomePage(),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const ThetaHomePage(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return FadeTransition(
           opacity: animation,

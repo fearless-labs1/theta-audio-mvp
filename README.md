@@ -89,11 +89,21 @@ FLUTTER_SDK="$HOME/.local/flutter" ANDROID_SDK_ROOT="$HOME/.local/android-sdk" .
 flutter doctor -v
 ```
 
-The script downloads SDKs on demand (no bundled binaries) and prints the environment variables you can add to your shell profile so future shells pick up the new toolchains.
+The script downloads SDKs on demand (no bundled binaries), disables Flutter analytics for non-interactive shells, and prints the environment variables you can add to your shell profile so future shells pick up the new toolchains.
+
+To skip Android tooling (useful for Linux-only builds or quick `flutter analyze`/`flutter test` runs), set `SKIP_ANDROID=1`:
+
+```bash
+SKIP_ANDROID=1 FLUTTER_SDK="$HOME/.local/flutter" ./scripts/setup_flutter_android.sh
+```
+
+This still installs Linux dependencies and precaches desktop/web artifacts while avoiding the Android SDK download.
+
+To avoid re-downloading the SDKs across runs, point `FLUTTER_SDK` and `ANDROID_SDK_ROOT` at a persistent directory (for example inside your CI cache or a local `.local/` folder); rerunning `scripts/setup_flutter_android.sh` will reuse the existing installations when those paths already contain the toolchains.
 
 ### CI validation
 
-GitHub Actions runs `flutter analyze` and `flutter test` on pushes and pull requests to `main` (see `.github/workflows/ci.yaml`). Run the same checks locally after `flutter pub get` to match CI expectations.
+GitHub Actions runs `flutter analyze`, `flutter test`, and release builds for Linux and Android on every push or pull request (any branch) via `.github/workflows/ci.yaml`. Use the **Run workflow** button on the Actions tab (available because `workflow_dispatch` is enabled) or push an empty commit (`git commit --allow-empty -m "Trigger CI" && git push`) to force a CI run when you need to re-verify the Android build without new changes. Run the same checks locally after `flutter pub get` to match CI expectations.
 
 ---
 
@@ -497,6 +507,15 @@ flutter pub get
 ## 🛠️ Development Workflow
 
 ### Local Development
+
+The CI pipeline provisions Flutter/Android tooling through `scripts/setup_flutter_android.sh`. Run it locally to mirror the CI environment and install the pinned Flutter 3.38.5 toolchain:
+
+```bash
+bash scripts/setup_flutter_android.sh
+export FLUTTER_SDK="$HOME/flutter"
+export ANDROID_SDK_ROOT="$HOME/android-sdk"
+export PATH="$FLUTTER_SDK/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+```
 
 ```bash
 # Start development
