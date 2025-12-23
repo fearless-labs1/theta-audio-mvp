@@ -1,0 +1,82 @@
+name: Android Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-notes:
+        description: "Optional release notes for the run"
+        required: false
+        type: string
+
+env:
+  FLUTTER_VERSION: '3.38.5'
+  FLUTTER_SDK: ${{ github.workspace }}/.flutter-sdk
+  ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+
+jobs:
+  build-and-sign:
+    name: Build signed Android App Bundle
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Flutter/Android SDKs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.FLUTTER_SDK }}
+            ${{ env.ANDROID_SDK_ROOT }}
+          key: ${{ runner.os }}-sdks-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
+
+      - name: Set up Flutter and Android tooling
+        run: bash scripts/setup_flutter_android.sh
+
+      - name: Expose Flutter and Android tools on PATH
+        run: |
+          echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Decode upload keystore from secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${ANDROID_KEYSTORE_BASE64:-}" ]]; then
+            echo "ANDROID_KEYSTORE_BASE64 secret is required" >&2
+            exit 1
+          fi
+
+          KEYSTORE_PATH="$RUNNER_TEMP/upload-keystore.jks"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+
+          {
+            echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH"
+            echo "ANDROID_KEYSTORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD}"
+            echo "ANDROID_KEY_ALIAS=${ANDROID_KEY_ALIAS}"
+            echo "ANDROID_KEY_PASSWORD=${ANDROID_KEY_PASSWORD}"
+          } >> "$GITHUB_ENV"
+
+      - name: Run release script
+        run: bash scripts/release_android.sh
+
+      - name: Upload signed App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-appbundle
+          path: build/app/outputs/bundle/release/app-release.aab

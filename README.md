@@ -289,6 +289,14 @@ flutter build appbundle --release
 - Never commit keystores or passwords to git (even private repos).
 - Enable Google Play App Signing and use an **Upload Key** for releases.
 
+**CI Android release workflow**
+- Secrets required in the repository:
+  - `ANDROID_KEYSTORE_BASE64` — base64 content of the upload keystore.
+  - `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` — matching passwords and alias.
+- The workflow (`Android Release`) decodes the keystore to a temp path, exports the above environment variables, then runs `scripts/release_android.sh` to build and sign the bundle.
+- Trigger manually from **Actions → Android Release → Run workflow**; the signed bundle is uploaded as a workflow artifact.
+- Never print secrets in workflow logs; rotate the upload key immediately if compromise is suspected.
+
 ### Windows Release Build
 
 ```bash
