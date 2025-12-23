@@ -16,8 +16,8 @@ HOME_DIR=$(cd "${HOME:-$(getent passwd "$(id -u)" | cut -d: -f6)}" && pwd)
 FLUTTER_SDK=${FLUTTER_SDK:-"$HOME_DIR/flutter"}
 ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-"$HOME_DIR/android-sdk"}
 ANDROID_CMDLINE_TOOLS_VERSION=${ANDROID_CMDLINE_TOOLS_VERSION:-"11076708"}
-ANDROID_PLATFORM=${ANDROID_PLATFORM:-"android-34"}
-ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-"34.0.0"}
+ANDROID_PLATFORM=${ANDROID_PLATFORM:-"android-36"}
+ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-"36.0.0"}
 SKIP_ANDROID=${SKIP_ANDROID:-"0"}
 FLUTTER_VERSION=${FLUTTER_VERSION:-"3.38.5"}
 
@@ -79,6 +79,10 @@ fi
 
 log "Ensuring Android command-line tools are present..."
 ANDROID_CMDLINE_DIR="${ANDROID_SDK_ROOT}/cmdline-tools/latest"
+if [[ -d "${ANDROID_SDK_ROOT}/cmdline-tools/latest-2" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
+  mv "${ANDROID_SDK_ROOT}/cmdline-tools/latest-2" "${ANDROID_CMDLINE_DIR}"
+fi
+
 if [[ ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
   mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
   TEMP_DIR=$(mktemp -d)
@@ -125,7 +129,7 @@ fi
 
 rm -f "${LICENSE_LOG}"
 
-sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "cmdline-tools;latest" >/dev/null
+sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "build-tools;28.0.3" "cmdline-tools;latest" >/dev/null
 
 log "Configuring Flutter to use the Android SDK..."
 flutter config --android-sdk "${ANDROID_SDK_ROOT}" >/dev/null
