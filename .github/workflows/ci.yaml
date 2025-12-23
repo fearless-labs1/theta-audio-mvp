@@ -59,10 +59,10 @@ jobs:
 
   build:
     name: Build artifacts
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.target == 'ios' && 'macos-latest' || 'ubuntu-latest' }}
     strategy:
       matrix:
-        target: [linux, android]
+        target: [linux, android, ios]
     env:
       FLUTTER_VERSION: '3.38.5'
       FLUTTER_SDK: ${{ github.workspace }}/.flutter-sdk
@@ -83,10 +83,15 @@ jobs:
           path: |
             ${{ env.FLUTTER_SDK }}
             ${{ env.ANDROID_SDK_ROOT }}
-          key: ${{ runner.os }}-sdks-v2-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
+          key: ${{ runner.os }}-sdks-v2-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_*.sh') }}
 
-      - name: Set up Flutter and Android tooling
-        run: bash scripts/setup_flutter_android.sh
+      - name: Set up Flutter and OS-specific tooling
+        run: |
+          if [[ "${{ matrix.target }}" == "ios" ]]; then
+            bash scripts/setup_flutter_macos.sh
+          else
+            bash scripts/setup_flutter_android.sh
+          fi
 
       - name: Expose Flutter and Android tools on PATH
         run: |
@@ -116,6 +121,8 @@ jobs:
         run: |
           if [[ "${{ matrix.target }}" == "linux" ]]; then
             flutter build linux --release
+          elif [[ "${{ matrix.target }}" == "ios" ]]; then
+            flutter build ios --release --no-codesign
           else
             flutter build appbundle --release
           fi
@@ -133,3 +140,10 @@ jobs:
         with:
           name: android-release-appbundle
           path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload iOS artifacts
+        if: matrix.target == 'ios'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-bundle
+          path: build/ios/iphoneos/Runner.app
