@@ -78,16 +78,27 @@ PROFILE
 fi
 
 log "Ensuring Android command-line tools are present..."
-ANDROID_CMDLINE_DIR="${ANDROID_SDK_ROOT}/cmdline-tools/latest"
 
-latest_dir=$(find "${ANDROID_SDK_ROOT}/cmdline-tools" -type d -name "latest-*" -print -quit)
-if [[ -n "$latest_dir" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
+ANDROID_CMDLINE_PARENT="${ANDROID_SDK_ROOT}/cmdline-tools"
+ANDROID_CMDLINE_DIR="${ANDROID_CMDLINE_PARENT}/latest"
+
+# Ensure parent exists BEFORE using find (prevents script exit with set -e)
+mkdir -p "${ANDROID_CMDLINE_PARENT}"
+
+# Normalize common nested layout: cmdline-tools/cmdline-tools/* -> cmdline-tools/latest/*
+if [[ -d "${ANDROID_CMDLINE_PARENT}/cmdline-tools" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
+  log "Normalizing nested cmdline-tools directory to ${ANDROID_CMDLINE_DIR}"
+  mv "${ANDROID_CMDLINE_PARENT}/cmdline-tools" "${ANDROID_CMDLINE_DIR}"
+fi
+
+# Normalize any odd folder name like latest-* -> latest
+latest_dir=$(find "${ANDROID_CMDLINE_PARENT}" -maxdepth 1 -type d -name "latest-*" -print -quit 2>/dev/null || true)
+if [[ -n "${latest_dir}" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
   log "Normalizing cmdline-tools directory from ${latest_dir} to ${ANDROID_CMDLINE_DIR}"
-  mv "$latest_dir" "${ANDROID_CMDLINE_DIR}"
+  mv "${latest_dir}" "${ANDROID_CMDLINE_DIR}"
 fi
 
 if [[ ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
-  mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
   TEMP_DIR=$(mktemp -d)
   TOOLS_ZIP="${TEMP_DIR}/cmdline-tools.zip"
   curl -fL "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}_latest.zip" -o "${TOOLS_ZIP}"
