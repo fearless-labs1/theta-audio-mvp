@@ -86,23 +86,11 @@ ANDROID_CMDLINE_DIR="${ANDROID_CMDLINE_PARENT}/latest"
 mkdir -p "${ANDROID_CMDLINE_PARENT}"
 
 # Normalize common nested layout: cmdline-tools/cmdline-tools/* -> cmdline-tools/latest/*
-if [[ -d "${ANDROID_CMDLINE_PARENT}/cmdline-tools" ]]; then
+if [[ -d "${ANDROID_CMDLINE_PARENT}/cmdline-tools" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
   log "Normalizing nested cmdline-tools directory to ${ANDROID_CMDLINE_DIR}"
-  rm -rf "${ANDROID_CMDLINE_DIR}"
   mv "${ANDROID_CMDLINE_PARENT}/cmdline-tools" "${ANDROID_CMDLINE_DIR}"
 fi
 
-# Normalize any odd folder name like latest-* -> latest (even if latest already exists)
-shopt -s nullglob
-for alt_dir in "${ANDROID_CMDLINE_PARENT}"/latest-*; do
-  if [[ "${alt_dir}" != "${ANDROID_CMDLINE_DIR}" ]]; then
-    log "Normalizing cmdline-tools directory from ${alt_dir} to ${ANDROID_CMDLINE_DIR}"
-    rm -rf "${ANDROID_CMDLINE_DIR}"
-    mv "${alt_dir}" "${ANDROID_CMDLINE_DIR}"
-    break
-  fi
-done
-shopt -u nullglob
 
 if [[ ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
   TEMP_DIR=$(mktemp -d)
@@ -118,18 +106,34 @@ fi
 export ANDROID_SDK_ROOT
 export PATH="${ANDROID_CMDLINE_DIR}/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
 
-log "Installing Android SDK components (this may take a while)..."
-SDKMANAGER_BIN="${ANDROID_CMDLINE_DIR}/bin/sdkmanager"
-if [[ ! -x "${SDKMANAGER_BIN}" ]]; then
-  log "sdkmanager not found at ${SDKMANAGER_BIN}. Contents of cmdline-tools may be corrupt."
-  exit 1
+# It is critical to normalize the cmdline-tools directory *before* any sdkmanager execution.
+# This prevents the "inconsistent location" warning.
+ANDROID_CMDLINE_PARENT="${ANDROID_SDK_ROOT}/cmdline-tools"
+ANDROID_CMDLINE_DIR="${ANDROID_CMDLINE_PARENT}/latest"
+
+# Ensure parent exists BEFORE using find (prevents script exit with set -e)
+mkdir -p "${ANDROID_CMDLINE_PARENT}"
+
+# Normalize common nested layout: cmdline-tools/cmdline-tools/* -> cmdline-tools/latest/*
+if [[ -d "${ANDROID_CMDLINE_PARENT}/cmdline-tools" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
+  log "Normalizing nested cmdline-tools directory to ${ANDROID_CMDLINE_DIR}"
+  mv "${ANDROID_CMDLINE_PARENT}/cmdline-tools" "${ANDROID_CMDLINE_DIR}"
 fi
+
+# Normalize any odd folder name like latest-* -> latest
+latest_dir=$(find "${ANDROID_CMDLINE_PARENT}" -maxdepth 1 -type d -name "latest-*" -print -quit 2>/dev/null || true)
+if [[ -n "${latest_dir}" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
+  log "Normalizing cmdline-tools directory from ${latest_dir} to ${ANDROID_CMDLINE_DIR}"
+  mv "${latest_dir}" "${ANDROID_CMDLINE_DIR}"
+fi
+
+log "Installing Android SDK components (this may take a while)..."
 LICENSE_LOG=$(mktemp)
 license_exit=1
 for attempt in 1 2 3; do
   set +e
   set +o pipefail
-  yes | "${SDKMANAGER_BIN}" --sdk_root="${ANDROID_SDK_ROOT}" --licenses >"${LICENSE_LOG}" 2>&1
+  yes | sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --licenses >"${LICENSE_LOG}" 2>&1
   license_exit=$?
   set -o pipefail
   set -e
@@ -154,22 +158,7 @@ fi
 
 rm -f "${LICENSE_LOG}"
 
-SDK_PACKAGES=(
-  "platform-tools"
-  "platforms;${ANDROID_PLATFORM}"
-  "platforms;android-35"
-  "build-tools;${ANDROID_BUILD_TOOLS}"
-  "build-tools;34.0.0"
-  "build-tools;28.0.3"
-  "ndk;28.2.13676358"
-)
-
-# Only request cmdline-tools if not already normalized to the expected location.
-if [[ ! -f "${ANDROID_CMDLINE_DIR}/source.properties" ]]; then
-  SDK_PACKAGES+=("cmdline-tools;latest")
-fi
-
-"${SDKMANAGER_BIN}" --sdk_root="${ANDROID_SDK_ROOT}" --install "${SDK_PACKAGES[@]}" >/dev/null
+sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "build-tools;28.0.3" "cmdline-tools;latest" "ndk;28.2.13676358" "cmake;3.22.1" >/dev/null
 
 log "Configuring Flutter to use the Android SDK..."
 flutter config --android-sdk "${ANDROID_SDK_ROOT}" >/dev/null
