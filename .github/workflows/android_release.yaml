@@ -28,7 +28,7 @@ jobs:
           path: |
             ${{ env.FLUTTER_SDK }}
             ${{ env.ANDROID_SDK_ROOT }}
-          key: ${{ runner.os }}-sdks-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
+          key: ${{ runner.os }}-sdks-v2-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
 
       - name: Set up Flutter and Android tooling
         run: bash scripts/setup_flutter_android.sh
