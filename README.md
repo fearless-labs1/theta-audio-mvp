@@ -91,9 +91,19 @@ flutter doctor -v
 
 The script downloads SDKs on demand (no bundled binaries), disables Flutter analytics for non-interactive shells, and prints the environment variables you can add to your shell profile so future shells pick up the new toolchains.
 
+To skip Android tooling (useful for Linux-only builds or quick `flutter analyze`/`flutter test` runs), set `SKIP_ANDROID=1`:
+
+```bash
+SKIP_ANDROID=1 FLUTTER_SDK="$HOME/.local/flutter" ./scripts/setup_flutter_android.sh
+```
+
+This still installs Linux dependencies and precaches desktop/web artifacts while avoiding the Android SDK download.
+
+To avoid re-downloading the SDKs across runs, point `FLUTTER_SDK` and `ANDROID_SDK_ROOT` at a persistent directory (for example inside your CI cache or a local `.local/` folder); rerunning `scripts/setup_flutter_android.sh` will reuse the existing installations when those paths already contain the toolchains.
+
 ### CI validation
 
-GitHub Actions runs `flutter analyze` and `flutter test` on pushes and pull requests to `main` (see `.github/workflows/ci.yaml`). Run the same checks locally after `flutter pub get` to match CI expectations.
+GitHub Actions runs `flutter analyze`, `flutter test`, and release builds for Linux and Android on every push or pull request (any branch) via `.github/workflows/ci.yaml`. Use the **Run workflow** button on the Actions tab (available because `workflow_dispatch` is enabled) or push an empty commit (`git commit --allow-empty -m "Trigger CI" && git push`) to force a CI run when you need to re-verify the Android build without new changes. Run the same checks locally after `flutter pub get` to match CI expectations.
 
 ---
 
@@ -278,14 +288,6 @@ flutter build appbundle --release
 - Never share keys over email, Slack, or other plaintext channels.
 - Never commit keystores or passwords to git (even private repos).
 - Enable Google Play App Signing and use an **Upload Key** for releases.
-
-**CI Android release workflow**
-- Secrets required in the repository:
-  - `ANDROID_KEYSTORE_BASE64` — base64 content of the upload keystore.
-  - `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` — matching passwords and alias.
-- The workflow (`Android Release`) decodes the keystore to a temp path, exports the above environment variables, then runs `scripts/release_android.sh` to build and sign the bundle.
-- Trigger manually from **Actions → Android Release → Run workflow**; the signed bundle is uploaded as a workflow artifact.
-- Never print secrets in workflow logs; rotate the upload key immediately if compromise is suspected.
 
 ### Windows Release Build
 
