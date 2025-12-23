@@ -79,7 +79,7 @@ fi
 
 log "Ensuring Android command-line tools are present..."
 ANDROID_CMDLINE_DIR="${ANDROID_SDK_ROOT}/cmdline-tools/latest"
-local latest_dir
+
 latest_dir=$(find "${ANDROID_SDK_ROOT}/cmdline-tools" -type d -name "latest-*" -print -quit)
 if [[ -n "$latest_dir" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
   log "Normalizing cmdline-tools directory from ${latest_dir} to ${ANDROID_CMDLINE_DIR}"
