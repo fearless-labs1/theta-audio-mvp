@@ -118,6 +118,27 @@ fi
 export ANDROID_SDK_ROOT
 export PATH="${ANDROID_CMDLINE_DIR}/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
 
+# It is critical to normalize the cmdline-tools directory *before* any sdkmanager execution.
+# This prevents the "inconsistent location" warning.
+ANDROID_CMDLINE_PARENT="${ANDROID_SDK_ROOT}/cmdline-tools"
+ANDROID_CMDLINE_DIR="${ANDROID_CMDLINE_PARENT}/latest"
+
+# Ensure parent exists BEFORE using find (prevents script exit with set -e)
+mkdir -p "${ANDROID_CMDLINE_PARENT}"
+
+# Normalize common nested layout: cmdline-tools/cmdline-tools/* -> cmdline-tools/latest/*
+if [[ -d "${ANDROID_CMDLINE_PARENT}/cmdline-tools" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
+  log "Normalizing nested cmdline-tools directory to ${ANDROID_CMDLINE_DIR}"
+  mv "${ANDROID_CMDLINE_PARENT}/cmdline-tools" "${ANDROID_CMDLINE_DIR}"
+fi
+
+# Normalize any odd folder name like latest-* -> latest
+latest_dir=$(find "${ANDROID_CMDLINE_PARENT}" -maxdepth 1 -type d -name "latest-*" -print -quit 2>/dev/null || true)
+if [[ -n "${latest_dir}" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
+  log "Normalizing cmdline-tools directory from ${latest_dir} to ${ANDROID_CMDLINE_DIR}"
+  mv "${latest_dir}" "${ANDROID_CMDLINE_DIR}"
+fi
+
 log "Installing Android SDK components (this may take a while)..."
 SDKMANAGER_BIN="${ANDROID_CMDLINE_DIR}/bin/sdkmanager"
 if [[ ! -x "${SDKMANAGER_BIN}" ]]; then
