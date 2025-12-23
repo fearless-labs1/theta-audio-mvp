@@ -53,6 +53,10 @@ JAVA_HOME=${JAVA_HOME:-"$(dirname "$(dirname "${JAVA_BIN}")")"}
 export JAVA_HOME
 log "JAVA_HOME set to ${JAVA_HOME}"
 
+# ------------------------------------------------------------------
+# REPOSITORY SETUP (UPDATED FOR SHALLOW/SINGLE-BRANCH CLONES)
+# ------------------------------------------------------------------
+
 log "Configuring repository state in ${REPO_DIR}..."
 
 if [[ -d "${REPO_DIR}/.git" ]]; then
@@ -61,15 +65,19 @@ if [[ -d "${REPO_DIR}/.git" ]]; then
   # Save current location
   pushd "${REPO_DIR}" >/dev/null
   
-  # Ensure we have the latest metadata
-  git fetch origin
-  
-  # Check if remote branch exists
+  # 1. Verify connection and branch existence
   if git ls-remote --exit-code --heads origin "${TARGET_BRANCH}" >/dev/null 2>&1; then
-    log "Checking out branch: ${TARGET_BRANCH}"
+    log "Branch '${TARGET_BRANCH}' found on remote."
     
-    # -B creates the branch if missing, or resets it if it exists
-    # origin/${TARGET_BRANCH} tells git exactly where to pull from
+    # 2. EXPLICIT FETCH:
+    # We fetch the target branch from origin and forcefully map it to the local
+    # remote-tracking branch (refs/remotes/origin/production).
+    # This solves the "fatal: 'origin/production' is not a commit" error.
+    log "Fetching origin/${TARGET_BRANCH} explicitly..."
+    git fetch origin "${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
+    
+    # 3. Checkout
+    log "Checking out branch: ${TARGET_BRANCH}"
     git checkout -B "${TARGET_BRANCH}" "origin/${TARGET_BRANCH}"
     
     log "Repository is now on ${TARGET_BRANCH}."
