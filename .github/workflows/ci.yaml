@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+  workflow_dispatch:
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    env:
+      FLUTTER_VERSION: '3.38.5'
+      FLUTTER_SDK: ${{ github.workspace }}/.flutter-sdk
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+      SKIP_ANDROID: '1'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Flutter/Android SDKs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.FLUTTER_SDK }}
+            ${{ env.ANDROID_SDK_ROOT }}
+          key: ${{ runner.os }}-sdks-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
+
+      - name: Set up Flutter and Android tooling
+        run: bash scripts/setup_flutter_android.sh
+
+      - name: Expose Flutter and Android tools on PATH
+        run: |
+          echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
+          if [[ "${SKIP_ANDROID}" != "1" ]]; then
+            echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+            echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+          fi
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+  build:
+    name: Build artifacts
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [linux, android]
+    env:
+      FLUTTER_VERSION: '3.38.5'
+      FLUTTER_SDK: ${{ github.workspace }}/.flutter-sdk
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+      SKIP_ANDROID: '1'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable Android SDK installation for Android builds
+        if: matrix.target == 'android'
+        run: echo "SKIP_ANDROID=0" >> "$GITHUB_ENV"
+
+      - name: Cache Flutter/Android SDKs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.FLUTTER_SDK }}
+            ${{ env.ANDROID_SDK_ROOT }}
+          key: ${{ runner.os }}-sdks-${{ env.FLUTTER_VERSION }}-${{ hashFiles('scripts/setup_flutter_android.sh') }}
+
+      - name: Set up Flutter and Android tooling
+        run: bash scripts/setup_flutter_android.sh
+
+      - name: Expose Flutter and Android tools on PATH
+        run: |
+          echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
+          if [[ "${SKIP_ANDROID}" != "1" ]]; then
+            echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+            echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+          fi
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable Linux desktop support
+        if: matrix.target == 'linux'
+        run: flutter config --enable-linux-desktop
+
+      - name: Build release binaries
+        run: |
+          if [[ "${{ matrix.target }}" == "linux" ]]; then
+            flutter build linux --release
+          else
+            flutter build appbundle --release
+          fi
+
+      - name: Upload Linux artifacts
+        if: matrix.target == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release-bundle
+          path: build/linux/x64/release/bundle/
+
+      - name: Upload Android artifacts
+        if: matrix.target == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-appbundle
+          path: build/app/outputs/bundle/release/app-release.aab
+
+  build-windows:
+    name: Build Windows artifact
+    runs-on: windows-latest
+    env:
+      FLUTTER_VERSION: '3.38.5'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Enable Windows desktop support
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release binaries
+        run: flutter build windows --release
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-bundle
+          path: build/windows/runner/Release
