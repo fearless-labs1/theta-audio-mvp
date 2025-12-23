@@ -16,8 +16,8 @@ HOME_DIR=$(cd "${HOME:-$(getent passwd "$(id -u)" | cut -d: -f6)}" && pwd)
 FLUTTER_SDK=${FLUTTER_SDK:-"$HOME_DIR/flutter"}
 ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-"$HOME_DIR/android-sdk"}
 ANDROID_CMDLINE_TOOLS_VERSION=${ANDROID_CMDLINE_TOOLS_VERSION:-"11076708"}
-ANDROID_PLATFORM=${ANDROID_PLATFORM:-"android-34"}
-ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-"34.0.0"}
+ANDROID_PLATFORM=${ANDROID_PLATFORM:-"android-36"}
+ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-"36.0.0"}
 SKIP_ANDROID=${SKIP_ANDROID:-"0"}
 FLUTTER_VERSION=${FLUTTER_VERSION:-"3.38.5"}
 
@@ -78,9 +78,27 @@ PROFILE
 fi
 
 log "Ensuring Android command-line tools are present..."
-ANDROID_CMDLINE_DIR="${ANDROID_SDK_ROOT}/cmdline-tools/latest"
+
+ANDROID_CMDLINE_PARENT="${ANDROID_SDK_ROOT}/cmdline-tools"
+ANDROID_CMDLINE_DIR="${ANDROID_CMDLINE_PARENT}/latest"
+
+# Ensure parent exists BEFORE using find (prevents script exit with set -e)
+mkdir -p "${ANDROID_CMDLINE_PARENT}"
+
+# Normalize common nested layout: cmdline-tools/cmdline-tools/* -> cmdline-tools/latest/*
+if [[ -d "${ANDROID_CMDLINE_PARENT}/cmdline-tools" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
+  log "Normalizing nested cmdline-tools directory to ${ANDROID_CMDLINE_DIR}"
+  mv "${ANDROID_CMDLINE_PARENT}/cmdline-tools" "${ANDROID_CMDLINE_DIR}"
+fi
+
+# Normalize any odd folder name like latest-* -> latest
+latest_dir=$(find "${ANDROID_CMDLINE_PARENT}" -maxdepth 1 -type d -name "latest-*" -print -quit 2>/dev/null || true)
+if [[ -n "${latest_dir}" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
+  log "Normalizing cmdline-tools directory from ${latest_dir} to ${ANDROID_CMDLINE_DIR}"
+  mv "${latest_dir}" "${ANDROID_CMDLINE_DIR}"
+fi
+
 if [[ ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
-  mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
   TEMP_DIR=$(mktemp -d)
   TOOLS_ZIP="${TEMP_DIR}/cmdline-tools.zip"
   curl -fL "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}_latest.zip" -o "${TOOLS_ZIP}"
@@ -125,7 +143,7 @@ fi
 
 rm -f "${LICENSE_LOG}"
 
-sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "cmdline-tools;latest" >/dev/null
+sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "build-tools;28.0.3" "cmdline-tools;latest" >/dev/null
 
 log "Configuring Flutter to use the Android SDK..."
 flutter config --android-sdk "${ANDROID_SDK_ROOT}" >/dev/null

@@ -217,15 +217,21 @@ open ios/Runner.xcworkspace
 
 ### Android Release Build
 
+Use the scripted flow to keep local and CI builds consistent:
+
 ```bash
-# Clean previous builds
+./scripts/release_android.sh
+```
+
+The script validates the Flutter version (3.38.5), runs `flutter clean`, `flutter pub get`, `flutter analyze`, `flutter test`, and builds the signed Android App Bundle. The resulting bundle and its SHA256 checksum are printed on completion.
+
+Manual commands (if you need them):
+
+```bash
 flutter clean
 flutter pub get
-
-# Build APK (for direct installation)
-flutter build apk --release
-
-# Build App Bundle (recommended for Play Store)
+flutter analyze
+flutter test
 flutter build appbundle --release
 ```
 
@@ -233,15 +239,63 @@ flutter build appbundle --release
 - APK: `build/app/outputs/flutter-apk/app-release.apk`
 - Bundle: `build/app/outputs/bundle/release/app-release.aab`
 
-**Signing Configuration:**
+### Android Signing & Key Safety
 
-Create `android/key.properties`:
-```properties
-storePassword=your_store_password
-keyPassword=your_key_password
-keyAlias=your_key_alias
-storeFile=/path/to/your/keystore.jks
+Release builds require a private upload keystore that must **never** be committed to git. Configure signing through environment variables or an untracked `key.properties` file.
+
+**Where to store the keystore locally**
+- Recommended path: `~/.keystores/theta_audio_mvp/upload.jks`
+- Keep a secure offline backup of the keystore and passwords.
+
+**Required environment variables** (used by Gradle):
+- `ANDROID_KEYSTORE_PATH` — absolute path to the upload keystore (e.g., `~/.keystores/theta_audio_mvp/upload.jks`)
+- `ANDROID_KEYSTORE_PASSWORD` — keystore password
+- `ANDROID_KEY_ALIAS` — key alias
+- `ANDROID_KEY_PASSWORD` — key password
+
+**Example exports**
+
+Bash / Zsh:
+```bash
+export ANDROID_KEYSTORE_PATH="$HOME/.keystores/theta_audio_mvp/upload.jks"
+export ANDROID_KEYSTORE_PASSWORD="your-keystore-password"
+export ANDROID_KEY_ALIAS="upload"
+export ANDROID_KEY_PASSWORD="your-key-password"
 ```
+
+PowerShell:
+```powershell
+$Env:ANDROID_KEYSTORE_PATH="$HOME/.keystores/theta_audio_mvp/upload.jks"
+$Env:ANDROID_KEYSTORE_PASSWORD="your-keystore-password"
+$Env:ANDROID_KEY_ALIAS="upload"
+$Env:ANDROID_KEY_PASSWORD="your-key-password"
+```
+
+**Local release build command**
+```bash
+flutter build appbundle --release
+```
+
+**CI guidance**
+- Store the keystore as a base64-encoded secret and decode it into `ANDROID_KEYSTORE_PATH` during the workflow.
+- Inject passwords via CI secrets and never echo them to logs.
+- Rotate the upload key immediately if compromise is suspected.
+
+**Key safety rules**
+- Restrict keystore access to the minimum number of people/machines required.
+- Store credentials in a secure vault or password manager.
+- Keep an offline, secured backup of the keystore and passwords.
+- Never share keys over email, Slack, or other plaintext channels.
+- Never commit keystores or passwords to git (even private repos).
+- Enable Google Play App Signing and use an **Upload Key** for releases.
+
+**CI Android release workflow**
+- Secrets required in the repository:
+  - `ANDROID_KEYSTORE_BASE64` — base64 content of the upload keystore.
+  - `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` — matching passwords and alias.
+- The workflow (`Android Release`) decodes the keystore to a temp path, exports the above environment variables, then runs `scripts/release_android.sh` to build and sign the bundle.
+- Trigger manually from **Actions → Android Release → Run workflow**; the signed bundle is uploaded as a workflow artifact.
+- Never print secrets in workflow logs; rotate the upload key immediately if compromise is suspected.
 
 ### Windows Release Build
 
