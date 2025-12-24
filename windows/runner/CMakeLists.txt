@@ -21,7 +21,7 @@ add_executable(${BINARY_NAME} WIN32
 apply_standard_settings(${BINARY_NAME})
 
 # Enable per-monitor DPI awareness for desktop readiness across displays.
-set_target_properties(${BINARY_NAME} PROPERTIES VS_DPI_AWARE "PER_MONITOR_HIGH_DPI_AWARE")
+set_target_properties(${BINARY_NAME} PROPERTIES VS_DPI_AWARE "PerMonitor")
 
 # Add preprocessor definitions for the build version.
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION=\"${FLUTTER_VERSION}\"")
