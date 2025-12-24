@@ -152,7 +152,7 @@ license_exit=1
 for attempt in 1 2 3; do
   set +e
   set +o pipefail
-  yes | "${ANDROID_CMDLINE_DIR}/bin/sdkmanager" --sdk_root="${ANDROID_SDK_ROOT}" --licenses >"${LICENSE_LOG}" 2>&1
+  yes | "${SDKMANAGER_BIN}" --sdk_root="${ANDROID_SDK_ROOT}" --licenses >"${LICENSE_LOG}" 2>&1
   license_exit=$?
   set -o pipefail
   set -e
@@ -177,14 +177,22 @@ fi
 
 rm -f "${LICENSE_LOG}"
 
-"${ANDROID_CMDLINE_DIR}/bin/sdkmanager" --sdk_root="${ANDROID_SDK_ROOT}" \
-  --install \
-  "platform-tools" \
-  "platforms;${ANDROID_PLATFORM}" \
-  "build-tools;${ANDROID_BUILD_TOOLS}" \
-  "build-tools;28.0.3" \
-  "ndk;${ANDROID_NDK_VERSION}" \
-  "cmdline-tools;latest" >/dev/null
+SDK_PACKAGES=(
+  "platform-tools"
+  "platforms;${ANDROID_PLATFORM}"
+  "platforms;android-35"
+  "build-tools;${ANDROID_BUILD_TOOLS}"
+  "build-tools;34.0.0"
+  "build-tools;28.0.3"
+  "ndk;28.2.13676358"
+)
+
+# Only request cmdline-tools if not already normalized to the expected location.
+if [[ ! -f "${ANDROID_CMDLINE_DIR}/source.properties" ]]; then
+  SDK_PACKAGES+=("cmdline-tools;latest")
+fi
+
+"${SDKMANAGER_BIN}" --sdk_root="${ANDROID_SDK_ROOT}" --install "${SDK_PACKAGES[@]}" >/dev/null
 
 log "Configuring Flutter to use the Android SDK..."
 flutter config --android-sdk "${ANDROID_SDK_ROOT}" >/dev/null
