@@ -90,6 +90,13 @@ class Win32Window {
   // Update the window frame's theme to match the system theme.
   static void UpdateTheme(HWND const window);
 
+  void InitializeCustomChrome();
+  void CreateCaptionButtons();
+  void UpdateCaptionButtonsLayout();
+  void ToggleCaptionButtonsVisibility(bool show);
+  bool IsPointInButtonRegion(POINT pt) const;
+  void EnsureMouseTracking();
+
   bool quit_on_close_ = false;
 
   // window handle for top level window.
@@ -97,6 +104,13 @@ class Win32Window {
 
   // window handle for hosted content.
   HWND child_content_ = nullptr;
+
+  // Custom caption buttons (hover only)
+  HWND minimize_button_ = nullptr;
+  HWND maximize_button_ = nullptr;
+  HWND close_button_ = nullptr;
+  bool tracking_mouse_leave_ = false;
+  bool buttons_visible_ = false;
 };
 
 #endif  // RUNNER_WIN32_WINDOW_H_
