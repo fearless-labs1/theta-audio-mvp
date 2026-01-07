@@ -4,7 +4,8 @@
 // 1. Play intro_video.mp4 (full duration)
 // 2. Play instruction_vid.mp4 (full duration)
 // 3. Fade to white overlay (800ms)
-// 4. Navigate to main app with fade transition (4000ms)
+// 4. Fade in black splash icon on white overlay
+// 5. Navigate to main app with fade transition (4000ms)
 //
 // FIXES APPLIED:
 // - Removed Chewie layer (simpler, more reliable playback)
@@ -61,6 +62,8 @@ class _IntroScreenState extends State<IntroScreen> {
   // Fade animation
   double _fadeOverlay = 0.0;
   bool _showFadeOverlay = false;
+  bool _showLatestPc = false;
+  double _latestPcOpacity = 0.0;
 
   @override
   void initState() {
@@ -476,6 +479,25 @@ class _IntroScreenState extends State<IntroScreen> {
 
     debugPrint('✅ Fade to white complete');
 
+    // Fade in black splash icon on white overlay
+    if (mounted) {
+      setState(() {
+        _showLatestPc = true;
+      });
+
+      for (int i = 0; i <= 16; i++) {
+        await Future.delayed(const Duration(milliseconds: 50));
+        if (mounted) {
+          setState(() {
+            _latestPcOpacity = i / 16.0;
+          });
+        }
+      }
+
+      // Briefly hold the splash before navigating
+      await Future.delayed(const Duration(milliseconds: 800));
+    }
+
     // Navigate to main app with fade transition (4000ms)
     if (mounted) {
       Navigator.pushReplacement(context, AppRouter.fadeToHomeReplacement());
@@ -524,6 +546,25 @@ class _IntroScreenState extends State<IntroScreen> {
                 duration: const Duration(milliseconds: 50),
                 child: Container(
                   color: Colors.white,
+                ),
+              ),
+            ),
+
+          // Black splash icon on white background
+          if (_showLatestPc)
+            Positioned.fill(
+              child: AnimatedOpacity(
+                opacity: _latestPcOpacity,
+                duration: const Duration(milliseconds: 50),
+                child: Container(
+                  color: Colors.white,
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/splash_icon_black.png',
+                      width: 320,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
               ),
             ),

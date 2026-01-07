@@ -210,102 +210,113 @@ mixin _HomePageBuild on _DialogBuilders {
                       const SizedBox(height: 10),
 
                       // GUIDE ME SEARCH BAR
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(25),
-                          border:
-                              Border.all(color: Colors.grey[400]!, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            // Guide Me button (left ~30%)
-                            SizedBox(
-                              width: 100,
-                              child: ElevatedButton(
-                                onPressed:
-                                    _buttonsDisabled ? null : _showGuideMeInfo,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _buttonsDisabled
-                                      ? Colors.grey
-                                      : Colors.black,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(25),
+                      LayoutBuilder(builder: (context, constraints) {
+                        final targetWidth = constraints.maxWidth * 0.7;
+                        return Center(
+                          child: SizedBox(
+                            width: targetWidth,
+                            height: 50,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(25),
+                                border: Border.all(
+                                    color: Colors.grey[400]!, width: 1.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
                                   ),
-                                  elevation: 0,
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.explore, size: 14),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Guide Me',
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  // Guide Me button (left ~30%)
+                                  SizedBox(
+                                    width: 100,
+                                    child: ElevatedButton(
+                                      onPressed: _buttonsDisabled
+                                          ? null
+                                          : _showGuideMeInfo,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: _buttonsDisabled
+                                            ? Colors.grey
+                                            : Colors.black,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(25),
+                                        ),
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.explore, size: 14),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Guide Me',
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Text input field (right ~70%)
-                            Expanded(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
-                                child: TextField(
-                                  controller: _guideMeController,
-                                  enabled: !_buttonsDisabled,
-                                  decoration: InputDecoration(
-                                    hintText: 'Ask your question...',
-                                    hintStyle: GoogleFonts.lora(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 12),
                                   ),
-                                  style: GoogleFonts.lora(fontSize: 12),
-                                  onSubmitted: (value) {
-                                    if (!_isLoadingGPTResponse &&
-                                        !_buttonsDisabled) {
-                                      _sendQuestionToGPT(value);
-                                    }
-                                  },
-                                ),
+                                  // Text input field (right ~70%)
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8),
+                                      child: TextField(
+                                        controller: _guideMeController,
+                                        enabled: !_buttonsDisabled,
+                                        decoration: InputDecoration(
+                                          hintText: 'Ask your question...',
+                                          hintStyle: GoogleFonts.lora(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                          border: InputBorder.none,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  vertical: 12),
+                                        ),
+                                        style: GoogleFonts.lora(fontSize: 12),
+                                        onSubmitted: (value) {
+                                          if (!_isLoadingGPTResponse &&
+                                              !_buttonsDisabled) {
+                                            _sendQuestionToGPT(value);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  // Magnifying glass button
+                                  IconButton(
+                                    icon: const Icon(Icons.search, size: 20),
+                                    color: _buttonsDisabled
+                                        ? Colors.grey
+                                        : Colors.black,
+                                    onPressed:
+                                        (_isLoadingGPTResponse ||
+                                                _buttonsDisabled)
+                                            ? null
+                                            : () => _sendQuestionToGPT(
+                                                _guideMeController.text),
+                                    padding: const EdgeInsets.all(8),
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                ],
                               ),
                             ),
-                            // Magnifying glass button
-                            IconButton(
-                              icon: const Icon(Icons.search, size: 20),
-                              color:
-                                  _buttonsDisabled ? Colors.grey : Colors.black,
-                              onPressed:
-                                  (_isLoadingGPTResponse || _buttonsDisabled)
-                                      ? null
-                                      : () => _sendQuestionToGPT(
-                                          _guideMeController.text),
-                              padding: const EdgeInsets.all(8),
-                              constraints: const BoxConstraints(),
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      }),
 
                       const SizedBox(height: 20),
                     ],
@@ -319,100 +330,105 @@ mixin _HomePageBuild on _DialogBuilders {
                   child: Column(
                     children: [
                       // Row 1: START/REPEAT and STOP buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // START / REPEAT button
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: (_isGoliathMode || _buttonsDisabled)
-                                  ? null
-                                  : _startOrRepeat,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey[300],
-                                disabledBackgroundColor: Colors.grey[400],
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                elevation: 4,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.play_arrow,
-                                      size: 22,
-                                      color:
-                                          (_isGoliathMode || _buttonsDisabled)
-                                              ? Colors.grey
-                                              : Colors.green),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Start / Repeat',
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color:
-                                          (_isGoliathMode || _buttonsDisabled)
-                                              ? Colors.grey
-                                              : Colors.black,
-                                    ),
+                      LayoutBuilder(builder: (context, constraints) {
+                        final buttonWidth = (constraints.maxWidth - 12) / 4;
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // START / REPEAT button
+                            SizedBox(
+                              width: buttonWidth,
+                              child: ElevatedButton(
+                                onPressed: (_isGoliathMode || _buttonsDisabled)
+                                    ? null
+                                    : _startOrRepeat,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey[300],
+                                  disabledBackgroundColor: Colors.grey[400],
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                ],
+                                  elevation: 4,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.play_arrow,
+                                        size: 22,
+                                        color: (_isGoliathMode ||
+                                                _buttonsDisabled)
+                                            ? Colors.grey
+                                            : Colors.green),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Start / Repeat',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: (_isGoliathMode ||
+                                                _buttonsDisabled)
+                                            ? Colors.grey
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
 
-                          const SizedBox(width: 12),
+                            const SizedBox(width: 12),
 
-                          // STOP THETA button
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: (!_isActive ||
-                                      _isGoliathMode ||
-                                      _buttonsDisabled)
-                                  ? null
-                                  : _stopTheta,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey[300],
-                                disabledBackgroundColor: Colors.grey[400],
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                elevation: 4,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.stop,
-                                      size: 22,
-                                      color: (_isActive &&
-                                              !_isGoliathMode &&
-                                              !_buttonsDisabled)
-                                          ? Colors.red
-                                          : Colors.grey),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Stop Theta',
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: (_isActive &&
-                                              !_isGoliathMode &&
-                                              !_buttonsDisabled)
-                                          ? Colors.black
-                                          : Colors.grey,
-                                    ),
+                            // STOP THETA button
+                            SizedBox(
+                              width: buttonWidth,
+                              child: ElevatedButton(
+                                onPressed: (!_isActive ||
+                                        _isGoliathMode ||
+                                        _buttonsDisabled)
+                                    ? null
+                                    : _stopTheta,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey[300],
+                                  disabledBackgroundColor: Colors.grey[400],
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                ],
+                                  elevation: 4,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.stop,
+                                        size: 22,
+                                        color: (_isActive &&
+                                                !_isGoliathMode &&
+                                                !_buttonsDisabled)
+                                            ? Colors.red
+                                            : Colors.grey),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Stop Theta',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: (_isActive &&
+                                                !_isGoliathMode &&
+                                                !_buttonsDisabled)
+                                            ? Colors.black
+                                            : Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        );
+                      }),
 
                       const SizedBox(height: 12),
 
