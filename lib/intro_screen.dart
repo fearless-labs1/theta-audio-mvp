@@ -4,7 +4,8 @@
 // 1. Play intro_video.mp4 (full duration)
 // 2. Play instruction_vid.mp4 (full duration)
 // 3. Fade to white overlay (800ms)
-// 4. Navigate to main app with fade transition (4000ms)
+// 4. Fade in LATEST PC image on white overlay
+// 5. Navigate to main app with fade transition (4000ms)
 //
 // FIXES APPLIED:
 // - Removed Chewie layer (simpler, more reliable playback)
@@ -61,11 +62,21 @@ class _IntroScreenState extends State<IntroScreen> {
   // Fade animation
   double _fadeOverlay = 0.0;
   bool _showFadeOverlay = false;
+  bool _showLatestPc = false;
+  double _latestPcOpacity = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _initializeIntroVideo();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        precacheImage(
+          const AssetImage('assets/images/LATEST PC.png'),
+          context,
+        );
+        _initializeIntroVideo();
+      }
+    });
   }
 
   // Initialize intro video (Video 1) with surface-ready detection
@@ -476,6 +487,25 @@ class _IntroScreenState extends State<IntroScreen> {
 
     debugPrint('✅ Fade to white complete');
 
+    // Fade in LATEST PC splash on white overlay
+    if (mounted) {
+      setState(() {
+        _showLatestPc = true;
+      });
+
+      for (int i = 0; i <= 16; i++) {
+        await Future.delayed(const Duration(milliseconds: 50));
+        if (mounted) {
+          setState(() {
+            _latestPcOpacity = i / 16.0;
+          });
+        }
+      }
+
+      // Briefly hold the splash before navigating
+      await Future.delayed(const Duration(milliseconds: 800));
+    }
+
     // Navigate to main app with fade transition (4000ms)
     if (mounted) {
       Navigator.pushReplacement(context, AppRouter.fadeToHomeReplacement());
@@ -527,6 +557,25 @@ class _IntroScreenState extends State<IntroScreen> {
                 ),
               ),
             ),
+
+          // LATEST PC splash on white background
+          if (_showLatestPc)
+            Positioned.fill(
+              child: AnimatedOpacity(
+                opacity: _latestPcOpacity,
+                duration: const Duration(milliseconds: 50),
+                child: Container(
+                  color: Colors.white,
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/LATEST PC.png',
+                      width: 320,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -535,11 +584,12 @@ class _IntroScreenState extends State<IntroScreen> {
   Widget _buildVideoContent() {
     // Show intro video
     if (_showingIntro && _isIntroInitialized && _introVideoController != null) {
-      return Center(
-        child: AspectRatio(
-          aspectRatio: _introVideoController!.value.aspectRatio > 0
-              ? _introVideoController!.value.aspectRatio
-              : 16 / 9,
+      final size = _introVideoController!.value.size;
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: size.width,
+          height: size.height,
           child: VideoPlayer(_introVideoController!),
         ),
       );
@@ -549,11 +599,12 @@ class _IntroScreenState extends State<IntroScreen> {
     if (_showingInstruction &&
         _isInstructionInitialized &&
         _instructionVideoController != null) {
-      return Center(
-        child: AspectRatio(
-          aspectRatio: _instructionVideoController!.value.aspectRatio > 0
-              ? _instructionVideoController!.value.aspectRatio
-              : 16 / 9,
+      final size = _instructionVideoController!.value.size;
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: size.width,
+          height: size.height,
           child: VideoPlayer(_instructionVideoController!),
         ),
       );

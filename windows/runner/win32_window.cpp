@@ -2,6 +2,7 @@
 
 #include <dwmapi.h>
 #include <flutter_windows.h>
+#include <windowsx.h>
 
 #include "resource.h"
 
@@ -145,6 +146,7 @@ bool Win32Window::Create(const std::wstring& title,
   }
 
   UpdateTheme(window);
+  InitializeCustomChrome();
 
   return OnCreate();
 }
@@ -204,6 +206,7 @@ Win32Window::MessageHandler(HWND hwnd,
         MoveWindow(child_content_, rect.left, rect.top, rect.right - rect.left,
                    rect.bottom - rect.top, TRUE);
       }
+      UpdateCaptionButtonsLayout();
       return 0;
     }
 
@@ -216,6 +219,40 @@ Win32Window::MessageHandler(HWND hwnd,
     case WM_DWMCOLORIZATIONCOLORCHANGED:
       UpdateTheme(hwnd);
       return 0;
+
+    case WM_MOUSEMOVE: {
+      EnsureMouseTracking();
+      POINT pt{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
+      ToggleCaptionButtonsVisibility(IsPointInButtonRegion(pt));
+      break;
+    }
+
+    case WM_MOUSELEAVE:
+      tracking_mouse_leave_ = false;
+      ToggleCaptionButtonsVisibility(false);
+      break;
+
+    case WM_COMMAND:
+      if (HIWORD(wparam) == BN_CLICKED) {
+        HWND source = reinterpret_cast<HWND>(lparam);
+        if (source == minimize_button_) {
+          ShowWindow(window_handle_, SW_MINIMIZE);
+          return 0;
+        }
+        if (source == maximize_button_) {
+          if (IsZoomed(window_handle_)) {
+            ShowWindow(window_handle_, SW_RESTORE);
+          } else {
+            ShowWindow(window_handle_, SW_MAXIMIZE);
+          }
+          return 0;
+        }
+        if (source == close_button_) {
+          PostMessage(window_handle_, WM_CLOSE, 0, 0);
+          return 0;
+        }
+      }
+      break;
   }
 
   return DefWindowProc(window_handle_, message, wparam, lparam);
@@ -284,5 +321,128 @@ void Win32Window::UpdateTheme(HWND const window) {
     BOOL enable_dark_mode = light_mode == 0;
     DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE,
                           &enable_dark_mode, sizeof(enable_dark_mode));
+  }
+}
+
+void Win32Window::InitializeCustomChrome() {
+  if (!window_handle_) {
+    return;
+  }
+
+  LONG style = GetWindowLong(window_handle_, GWL_STYLE);
+  style &= ~(WS_CAPTION | WS_THICKFRAME | WS_BORDER);
+  SetWindowLong(window_handle_, GWL_STYLE, style);
+  LONG ex_style = GetWindowLong(window_handle_, GWL_EXSTYLE);
+  ex_style &= ~WS_EX_CLIENTEDGE;
+  SetWindowLong(window_handle_, GWL_EXSTYLE, ex_style);
+  SetWindowPos(window_handle_, nullptr, 0, 0, 0, 0,
+               SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                   SWP_NOACTIVATE);
+
+  CreateCaptionButtons();
+  UpdateCaptionButtonsLayout();
+  ToggleCaptionButtonsVisibility(false);
+}
+
+void Win32Window::CreateCaptionButtons() {
+  if (!window_handle_) {
+    return;
+  }
+
+  UINT dpi = GetDpiForWindow(window_handle_);
+  double scale_factor = dpi / 96.0;
+  int buttonWidth = Scale(32, scale_factor);
+  int buttonHeight = Scale(24, scale_factor);
+
+  minimize_button_ = CreateWindowEx(
+      0, L"BUTTON", L"–", WS_CHILD, 0, 0, buttonWidth, buttonHeight,
+      window_handle_, reinterpret_cast<HMENU>(1), GetModuleHandle(nullptr),
+      nullptr);
+
+  maximize_button_ = CreateWindowEx(
+      0, L"BUTTON", L"□", WS_CHILD, 0, 0, buttonWidth, buttonHeight,
+      window_handle_, reinterpret_cast<HMENU>(2), GetModuleHandle(nullptr),
+      nullptr);
+
+  close_button_ = CreateWindowEx(0, L"BUTTON", L"✕", WS_CHILD, 0, 0,
+                                 buttonWidth, buttonHeight, window_handle_,
+                                 reinterpret_cast<HMENU>(3),
+                                 GetModuleHandle(nullptr), nullptr);
+}
+
+void Win32Window::UpdateCaptionButtonsLayout() {
+  if (!window_handle_ || !minimize_button_ || !maximize_button_ ||
+      !close_button_) {
+    return;
+  }
+
+  RECT rect = GetClientArea();
+  UINT dpi = GetDpiForWindow(window_handle_);
+  double scale_factor = dpi / 96.0;
+  int buttonWidth = Scale(32, scale_factor);
+  int buttonHeight = Scale(24, scale_factor);
+  int padding = Scale(8, scale_factor);
+  int spacing = Scale(6, scale_factor);
+
+  int x = rect.right - padding - buttonWidth;
+  int y = padding;
+
+  SetWindowPos(close_button_, HWND_TOP, x, y, buttonWidth, buttonHeight,
+               SWP_NOACTIVATE);
+  x -= buttonWidth + spacing;
+  SetWindowPos(maximize_button_, HWND_TOP, x, y, buttonWidth, buttonHeight,
+               SWP_NOACTIVATE);
+  x -= buttonWidth + spacing;
+  SetWindowPos(minimize_button_, HWND_TOP, x, y, buttonWidth, buttonHeight,
+               SWP_NOACTIVATE);
+}
+
+void Win32Window::ToggleCaptionButtonsVisibility(bool show) {
+  if (!minimize_button_ || !maximize_button_ || !close_button_) {
+    return;
+  }
+
+  if (buttons_visible_ == show) {
+    return;
+  }
+
+  int command = show ? SW_SHOWNOACTIVATE : SW_HIDE;
+  ShowWindow(minimize_button_, command);
+  ShowWindow(maximize_button_, command);
+  ShowWindow(close_button_, command);
+  buttons_visible_ = show;
+}
+
+bool Win32Window::IsPointInButtonRegion(POINT pt) const {
+  if (!window_handle_) {
+    return false;
+  }
+
+  RECT rect;
+  GetClientRect(window_handle_, &rect);
+  UINT dpi = GetDpiForWindow(window_handle_);
+  double scale_factor = dpi / 96.0;
+
+  int buttonWidth = Scale(32, scale_factor);
+  int padding = Scale(8, scale_factor);
+  int spacing = Scale(6, scale_factor);
+  int regionWidth = padding * 2 + (buttonWidth * 3) + (spacing * 2);
+  int regionHeight = Scale(48, scale_factor);
+
+  RECT hoverRegion = {rect.right - regionWidth, 0, rect.right, regionHeight};
+  return PtInRect(&hoverRegion, pt);
+}
+
+void Win32Window::EnsureMouseTracking() {
+  if (tracking_mouse_leave_ || !window_handle_) {
+    return;
+  }
+
+  TRACKMOUSEEVENT tme{};
+  tme.cbSize = sizeof(TRACKMOUSEEVENT);
+  tme.dwFlags = TME_LEAVE;
+  tme.hwndTrack = window_handle_;
+  if (TrackMouseEvent(&tme)) {
+    tracking_mouse_leave_ = true;
   }
 }
