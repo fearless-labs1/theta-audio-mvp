@@ -18,6 +18,8 @@ ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-"$HOME_DIR/android-sdk"}
 ANDROID_CMDLINE_TOOLS_VERSION=${ANDROID_CMDLINE_TOOLS_VERSION:-"11076708"}
 ANDROID_PLATFORM=${ANDROID_PLATFORM:-"android-36"}
 ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-"36.0.0"}
+# Keep in sync with android/app/build.gradle (ndkVersion).
+ANDROID_NDK_VERSION=${ANDROID_NDK_VERSION:-"28.2.13676358"}
 SKIP_ANDROID=${SKIP_ANDROID:-"0"}
 FLUTTER_VERSION=${FLUTTER_VERSION:-"3.38.5"}
 
@@ -86,11 +88,26 @@ ANDROID_CMDLINE_DIR="${ANDROID_CMDLINE_PARENT}/latest"
 mkdir -p "${ANDROID_CMDLINE_PARENT}"
 
 # Normalize common nested layout: cmdline-tools/cmdline-tools/* -> cmdline-tools/latest/*
-if [[ -d "${ANDROID_CMDLINE_PARENT}/cmdline-tools" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
-  log "Normalizing nested cmdline-tools directory to ${ANDROID_CMDLINE_DIR}"
-  mv "${ANDROID_CMDLINE_PARENT}/cmdline-tools" "${ANDROID_CMDLINE_DIR}"
+if [[ -d "${ANDROID_CMDLINE_PARENT}/cmdline-tools" ]]; then
+  if [[ -d "${ANDROID_CMDLINE_DIR}" ]]; then
+    log "Removing stale nested cmdline-tools directory at ${ANDROID_CMDLINE_PARENT}/cmdline-tools"
+    rm -rf "${ANDROID_CMDLINE_PARENT}/cmdline-tools"
+  else
+    log "Normalizing nested cmdline-tools directory to ${ANDROID_CMDLINE_DIR}"
+    mv "${ANDROID_CMDLINE_PARENT}/cmdline-tools" "${ANDROID_CMDLINE_DIR}"
+  fi
 fi
 
+# Normalize any odd folder name like latest-* -> latest
+while IFS= read -r -d '' latest_dir; do
+  if [[ -d "${ANDROID_CMDLINE_DIR}" ]]; then
+    log "Removing stale cmdline-tools directory at ${latest_dir}"
+    rm -rf "${latest_dir}"
+  else
+    log "Normalizing cmdline-tools directory from ${latest_dir} to ${ANDROID_CMDLINE_DIR}"
+    mv "${latest_dir}" "${ANDROID_CMDLINE_DIR}"
+  fi
+done < <(find "${ANDROID_CMDLINE_PARENT}" -maxdepth 1 -type d -name "latest-*" -print0 2>/dev/null || true)
 
 if [[ ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
   TEMP_DIR=$(mktemp -d)
@@ -106,34 +123,13 @@ fi
 export ANDROID_SDK_ROOT
 export PATH="${ANDROID_CMDLINE_DIR}/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
 
-# It is critical to normalize the cmdline-tools directory *before* any sdkmanager execution.
-# This prevents the "inconsistent location" warning.
-ANDROID_CMDLINE_PARENT="${ANDROID_SDK_ROOT}/cmdline-tools"
-ANDROID_CMDLINE_DIR="${ANDROID_CMDLINE_PARENT}/latest"
-
-# Ensure parent exists BEFORE using find (prevents script exit with set -e)
-mkdir -p "${ANDROID_CMDLINE_PARENT}"
-
-# Normalize common nested layout: cmdline-tools/cmdline-tools/* -> cmdline-tools/latest/*
-if [[ -d "${ANDROID_CMDLINE_PARENT}/cmdline-tools" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
-  log "Normalizing nested cmdline-tools directory to ${ANDROID_CMDLINE_DIR}"
-  mv "${ANDROID_CMDLINE_PARENT}/cmdline-tools" "${ANDROID_CMDLINE_DIR}"
-fi
-
-# Normalize any odd folder name like latest-* -> latest
-latest_dir=$(find "${ANDROID_CMDLINE_PARENT}" -maxdepth 1 -type d -name "latest-*" -print -quit 2>/dev/null || true)
-if [[ -n "${latest_dir}" && ! -d "${ANDROID_CMDLINE_DIR}" ]]; then
-  log "Normalizing cmdline-tools directory from ${latest_dir} to ${ANDROID_CMDLINE_DIR}"
-  mv "${latest_dir}" "${ANDROID_CMDLINE_DIR}"
-fi
-
 log "Installing Android SDK components (this may take a while)..."
 LICENSE_LOG=$(mktemp)
 license_exit=1
 for attempt in 1 2 3; do
   set +e
   set +o pipefail
-  yes | sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --licenses >"${LICENSE_LOG}" 2>&1
+  yes | "${ANDROID_CMDLINE_DIR}/bin/sdkmanager" --sdk_root="${ANDROID_SDK_ROOT}" --licenses >"${LICENSE_LOG}" 2>&1
   license_exit=$?
   set -o pipefail
   set -e
@@ -158,7 +154,14 @@ fi
 
 rm -f "${LICENSE_LOG}"
 
-sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --install "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}" "build-tools;28.0.3" "cmdline-tools;latest" "ndk;28.2.13676358" "cmake;3.22.1" >/dev/null
+"${ANDROID_CMDLINE_DIR}/bin/sdkmanager" --sdk_root="${ANDROID_SDK_ROOT}" \
+  --install \
+  "platform-tools" \
+  "platforms;${ANDROID_PLATFORM}" \
+  "build-tools;${ANDROID_BUILD_TOOLS}" \
+  "build-tools;28.0.3" \
+  "ndk;${ANDROID_NDK_VERSION}" \
+  "cmdline-tools;latest" >/dev/null
 
 log "Configuring Flutter to use the Android SDK..."
 flutter config --android-sdk "${ANDROID_SDK_ROOT}" >/dev/null

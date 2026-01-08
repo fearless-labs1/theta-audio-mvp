@@ -119,3 +119,17 @@ jobs:
           else
             flutter build appbundle --release
           fi
+
+      - name: Upload Linux artifacts
+        if: matrix.target == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release-bundle
+          path: build/linux/x64/release/bundle/
+
+      - name: Upload Android artifacts
+        if: matrix.target == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-appbundle
+          path: build/app/outputs/bundle/release/app-release.aab
