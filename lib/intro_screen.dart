@@ -4,7 +4,7 @@
 // 1. Play intro_video.mp4 (full duration)
 // 2. Play instruction_vid.mp4 (full duration)
 // 3. Fade to white overlay (800ms)
-// 4. Fade in black splash icon on white overlay
+// 4. Fade in LATEST PC image on white overlay
 // 5. Navigate to main app with fade transition (4000ms)
 //
 // FIXES APPLIED:
@@ -68,7 +68,11 @@ class _IntroScreenState extends State<IntroScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeIntroVideo();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initializeIntroVideo();
+      }
+    });
   }
 
   // Initialize intro video (Video 1) with surface-ready detection
@@ -479,7 +483,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
     debugPrint('✅ Fade to white complete');
 
-    // Fade in black splash icon on white overlay
+    // Fade in LATEST PC splash on white overlay
     if (mounted) {
       setState(() {
         _showLatestPc = true;
@@ -550,7 +554,7 @@ class _IntroScreenState extends State<IntroScreen> {
               ),
             ),
 
-          // Black splash icon on white background
+          // LATEST PC splash on white background
           if (_showLatestPc)
             Positioned.fill(
               child: AnimatedOpacity(
@@ -560,7 +564,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   color: Colors.white,
                   child: Center(
                     child: Image.asset(
-                      'assets/images/splash_icon_black.png',
+                      'assets/images/LATEST PC.png',
                       width: 320,
                       fit: BoxFit.contain,
                     ),
