@@ -72,6 +72,11 @@ jobs:
             echo "ANDROID_KEY_PASSWORD=${ANDROID_KEY_PASSWORD}"
           } >> "$GITHUB_ENV"
 
+      - name: Check Maven Central connectivity
+        run: |
+          curl -I https://repo.maven.apache.org/maven2/
+          curl -I https://repo.maven.apache.org/maven2/org/ow2/asm/asm/9.7.1/asm-9.7.1.pom
+
       - name: Run release script
         run: bash scripts/release_android.sh
 
