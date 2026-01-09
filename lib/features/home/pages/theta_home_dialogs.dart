@@ -2,7 +2,6 @@ part of 'theta_home_page.dart';
 
 mixin _DialogBuilders on State<ThetaHomePage> {
   // Members provided by _ThetaHomePageState
-  AudioPlayer get _dialogAudioPlayer;
   Future<void> _stopDialogAudioAndRestoreMusic();
   Future<void> _playDialogAudioWithMusicFade(String assetPath);
   Future<void> _duckMusicForIntro();
@@ -11,6 +10,7 @@ mixin _DialogBuilders on State<ThetaHomePage> {
   bool get _isMusicPlaying;
   int get _selectedInterval;
   set _selectedInterval(int minutes);
+
   // ═══════════════════════════════════════════════════════════════════
   // OPTION 5 STYLED DIALOGS - ALL DIALOGS USE THIS STYLING
   // ═══════════════════════════════════════════════════════════════════
@@ -76,7 +76,7 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                     scrollFraction =
                         (controller.offset / maxScroll).clamp(0.0, 1.0);
                   }
-                } catch (e) {
+                } catch (_) {
                   // Controller not yet attached
                 }
 
@@ -117,7 +117,7 @@ mixin _DialogBuilders on State<ThetaHomePage> {
     required String title,
     required String subtitle,
     required Widget content,
-    ScrollController? scrollController,
+    required ScrollController scrollController,
   }) {
     return Container(
       constraints: BoxConstraints(
@@ -179,7 +179,7 @@ mixin _DialogBuilders on State<ThetaHomePage> {
             // Content section with gold dot scrollbar
             Flexible(
               child: _buildGoldDotScrollable(
-                controller: scrollController!,
+                controller: scrollController,
                 child: content,
               ),
             ),
@@ -217,10 +217,11 @@ mixin _DialogBuilders on State<ThetaHomePage> {
     );
   }
 
-  /// FIX #7: "What is Theta" Dialog with Option 5 styling and 350000ms auto-scroll
+  /// FIX #7: "What is Theta" Dialog with Option 5 styling
   // ignore: unused_element
   Future<void> _showAboutDialog() async {
     await _playDialogAudioWithMusicFade('audio/what_is_theta.mp3');
+    if (!mounted) return;
 
     final ScrollController scrollController = ScrollController();
 
@@ -229,7 +230,6 @@ mixin _DialogBuilders on State<ThetaHomePage> {
       barrierColor: Colors.black.withValues(alpha: 0.7),
       builder: (context) {
         // Auto-scroll DISABLED - user scrolls manually via gold dot
-
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(16),
@@ -252,43 +252,64 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                 Text(
                   'Theta is a powerful Prayer and Affirmation app, available on Windows and Mac personal computers, as well as Android and Apple cellphones.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Theta features two modes of use:',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• Theta Mode — Prayers are spoken aloud, and the user repeats (speaks) each line immediately.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• Goliath Mode — Affirmations are spoken aloud, and the user repeats (speaks) each line immediately.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'The personal computer versions can be played through speakers or Bluetooth wireless earphones or earbuds, throughout your homes, bedrooms, children bedrooms or offices.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'The mobile versions can be played through device speakers or car audio systems, but is optimally enjoyed through a single Bluetooth wireless earbud - discreetly keeping you in a constant state of Theta throughout your day, irrelevant of your location or situation, helping you stay focused on what is most important, the Word of God and His Will for our lives.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Theta was designed to simulate its users to repeat each Prayer or Affirmation out aloud, or under their breath, either way "speaking" the transformative word of God.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -312,49 +333,73 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                 Text(
                   'Not in the Theta audio itself,',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'but in the living Word of God being "spoken" after each prayer or affirmation is played, and the heart of the person speaking, postured towards the Lord.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Our words have power because God hears them, God responds to them, and God uses them.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'We declare this not as self-generated power, but by calling on God\'s power.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'We do not command reality — we pray, affirm, proclaim, and bless using His authority.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Our words hold real influence — to build up or tear down — and God commands us to use them for life.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'We are instructed to speak God\'s Word with authority, daily.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'By repeatedly doing this, you enter into a state of "Theta", of total gratitude for Gods Power, constant favor and presence in your life.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -369,7 +414,10 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                 Text(
                   'Prayer Warfare is talking to God — calling on His power, asking for intervention, binding and loosing, pleading Scripture, interceding, commanding in Jesus\' name - Praying is commanded (Eph. 6:18; 1 Thess. 5:17).',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -384,7 +432,10 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                 Text(
                   'Affirmation Warfare is declaring God\'s truth aloud — reminding yourself and the atmosphere of what God has already said (Scripture-based declarations), used to push back lies and reinforce faith - The Word is a weapon: "the sword of the Spirit" (Eph. 6:17).',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -399,43 +450,64 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                 Text(
                   '• Say each Prayer or Affirmation out loud, deliberately, slowly.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• Voice matters — speak audibly. The ear hears what the heart receives.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• Use emotion and faith — speak with expectancy, not vain repetition.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• Be consistent — spiritual fruit grows with steady discipline.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• Not magic: this is not formulaic "name it and claim it" without God\'s will. It\'s faithful engagement with God\'s Word.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• Humility: avoid prideful, self-centered tone. Subordinate declarations to God\'s will, always keep a surrendered heart.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• Use each Prayer and Affirmation as a starting point to a longer prayer you engage with God through, adding your own personal requests, gratefulness and declarations after the prayer has finished playing.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -450,31 +522,46 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                 Text(
                   'Prayer brings God\'s authority and action into the situation.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Affirmations reinforce your mind, heart, and the spiritual atmosphere with Scripture-based truth.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Together: you ask God and declare God\'s truth — you engage God and align your thinking with Him. That\'s both relational and authoritative.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Together, they are extremely powerful:',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• You pray for strength.\n• You affirm that God is your strength.\n• You pray for protection.\n• You affirm that no weapon formed against you will prosper.\n• You pray for peace.\n• You affirm that the peace of Christ rules in your heart.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -489,37 +576,55 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                 Text(
                   'Because negative thoughts, fear, discouragement, and spiritual pressure often come like attacks.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Prayers and Affirmations rooted in Scripture act like weapons, especially when spoken out loud:',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• Truth replaces lies.\n• Faith replaces fear.\n• God\'s promises replace anxiety.\n• Identity replaces confusion.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'God creates, commands, heals, corrects, and blesses through spoken words — and Scripture connects that same principle to the believer\'s life.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'God didn\'t merely think creation — Scripture repeatedly emphasizes that He spoke it.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   '& as his children, we are called to do the same.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -543,7 +648,10 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                 Text(
                   'Let the story of your breakthrough begin, by echoing the word of God.',
                   style: GoogleFonts.lora(
-                      fontSize: 14, height: 1.7, color: _bodyText),
+                    fontSize: 14,
+                    height: 1.7,
+                    color: _bodyText,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -595,10 +703,11 @@ mixin _DialogBuilders on State<ThetaHomePage> {
     await _stopDialogAudioAndRestoreMusic();
   }
 
-  /// FIX #9: Guide Me Info Dialog with Option 5 styling and auto-scroll
+  /// FIX #9: Guide Me Info Dialog with Option 5 styling
   // ignore: unused_element
   Future<void> _showGuideMeInfo() async {
     await _playDialogAudioWithMusicFade('audio/guide_me_info.mp3');
+    if (!mounted) return;
 
     final ScrollController scrollController = ScrollController();
 
@@ -607,7 +716,6 @@ mixin _DialogBuilders on State<ThetaHomePage> {
       barrierColor: Colors.black.withValues(alpha: 0.7),
       builder: (context) {
         // Auto-scroll DISABLED - user scrolls manually via gold dot
-
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(16),
@@ -824,9 +932,11 @@ mixin _DialogBuilders on State<ThetaHomePage> {
     await _stopDialogAudioAndRestoreMusic();
   }
 
-  /// FIX #8 & #11: Guide Me Response Dialog with Option 5 styling and 30000ms auto-scroll
+  /// FIX #8 & #11: Guide Me Response Dialog with Option 5 styling
   Future<void> _showResponseDialog(String response) async {
     await _duckMusicForIntro();
+    if (!mounted) return;
+
     final ScrollController scrollController = ScrollController();
 
     await showDialog(
@@ -842,8 +952,11 @@ mixin _DialogBuilders on State<ThetaHomePage> {
             scrollController: scrollController,
             content: SelectableText(
               response,
-              style:
-                  GoogleFonts.lora(fontSize: 14, height: 1.7, color: _bodyText),
+              style: GoogleFonts.lora(
+                fontSize: 14,
+                height: 1.7,
+                color: _bodyText,
+              ),
             ),
           ),
         );
@@ -856,6 +969,7 @@ mixin _DialogBuilders on State<ThetaHomePage> {
 
   Future<void> _showErrorDialog(String message) async {
     final ScrollController scrollController = ScrollController();
+
     await showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.7),
@@ -878,8 +992,11 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: _goldAccent, width: 3),
                     ),
-                    child: const Icon(Icons.error_outline,
-                        color: _goldAccent, size: 26),
+                    child: const Icon(
+                      Icons.error_outline,
+                      color: _goldAccent,
+                      size: 26,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -898,7 +1015,10 @@ mixin _DialogBuilders on State<ThetaHomePage> {
               Text(
                 message,
                 style: GoogleFonts.lora(
-                    fontSize: 14, color: _bodyText, height: 1.6),
+                  fontSize: 14,
+                  color: _bodyText,
+                  height: 1.6,
+                ),
               ),
               const SizedBox(height: 14),
               Container(
@@ -911,7 +1031,10 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                 child: Text(
                   'Take a breath, then try again. If the issue continues, check your connection and keep worshipping.',
                   style: GoogleFonts.lora(
-                      fontSize: 12.5, height: 1.5, color: _bodyText),
+                    fontSize: 12.5,
+                    height: 1.5,
+                    color: _bodyText,
+                  ),
                 ),
               ),
             ],
@@ -919,6 +1042,7 @@ mixin _DialogBuilders on State<ThetaHomePage> {
         ),
       ),
     );
+
     scrollController.dispose();
   }
 
@@ -988,7 +1112,9 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                         ),
                       ),
                       Container(
-                          height: 2, color: _goldAccent.withValues(alpha: 0.3)),
+                        height: 2,
+                        color: _goldAccent.withValues(alpha: 0.3),
+                      ),
                       // Interval buttons
                       Padding(
                         padding: const EdgeInsets.all(20),
@@ -1004,8 +1130,9 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                                 '10 minutes', 10, setDialogState),
                             const SizedBox(height: 20),
                             Container(
-                                height: 1,
-                                color: _goldAccent.withValues(alpha: 0.3)),
+                              height: 1,
+                              color: _goldAccent.withValues(alpha: 0.3),
+                            ),
                             const SizedBox(height: 16),
                             // Music toggle
                             Row(
@@ -1022,6 +1149,7 @@ mixin _DialogBuilders on State<ThetaHomePage> {
                                 GestureDetector(
                                   onTap: () async {
                                     await _toggleBackgroundMusic();
+                                    if (!mounted) return;
                                     setDialogState(() {});
                                     setState(() {});
                                   },
@@ -1092,8 +1220,12 @@ mixin _DialogBuilders on State<ThetaHomePage> {
   }
 
   Widget _buildOption5IntervalTile(
-      String label, int minutes, StateSetter setDialogState) {
+    String label,
+    int minutes,
+    StateSetter setDialogState,
+  ) {
     final isSelected = _selectedInterval == minutes;
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -1104,8 +1236,7 @@ mixin _DialogBuilders on State<ThetaHomePage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         decoration: BoxDecoration(
-          color:
-              isSelected ? _goldAccent.withValues(alpha: 0.15) : Colors.white,
+          color: isSelected ? _goldAccent.withValues(alpha: 0.15) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? _goldAccent : const Color(0xFFDDDDDD),
