@@ -2,6 +2,7 @@ part of 'theta_home_page.dart';
 
 mixin _DialogBuilders on State<ThetaHomePage> {
   // Members provided by _ThetaHomePageState
+  AudioPlayer get _dialogAudioPlayer;
   Future<void> _stopDialogAudioAndRestoreMusic();
   Future<void> _playDialogAudioWithMusicFade(String assetPath);
   Future<void> _duckMusicForIntro();
@@ -220,8 +221,6 @@ mixin _DialogBuilders on State<ThetaHomePage> {
   // ignore: unused_element
   Future<void> _showAboutDialog() async {
     await _playDialogAudioWithMusicFade('audio/what_is_theta.mp3');
-
-    if (!mounted) return;
 
     final ScrollController scrollController = ScrollController();
 
@@ -601,8 +600,6 @@ mixin _DialogBuilders on State<ThetaHomePage> {
   Future<void> _showGuideMeInfo() async {
     await _playDialogAudioWithMusicFade('audio/guide_me_info.mp3');
 
-    if (!mounted) return;
-
     final ScrollController scrollController = ScrollController();
 
     await showDialog(
@@ -830,10 +827,8 @@ mixin _DialogBuilders on State<ThetaHomePage> {
   /// FIX #8 & #11: Guide Me Response Dialog with Option 5 styling and 30000ms auto-scroll
   Future<void> _showResponseDialog(String response) async {
     await _duckMusicForIntro();
-
-    if (!mounted) return;
-
     final ScrollController scrollController = ScrollController();
+
     await showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.7),
