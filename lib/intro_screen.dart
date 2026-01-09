@@ -70,6 +70,7 @@ class _IntroScreenState extends State<IntroScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+
         precacheImage(
           const AssetImage('assets/images/LATEST PC.png'),
           context,
