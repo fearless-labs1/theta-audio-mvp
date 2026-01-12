@@ -133,3 +133,58 @@ jobs:
         with:
           name: android-release-appbundle
           path: build/app/outputs/bundle/release/app-release.aab
+
+  apple:
+    name: Apple builds (macOS + iOS)
+    runs-on: macos-latest
+    env:
+      FLUTTER_VERSION: '3.38.5'
+      FLUTTER_SDK: ${{ github.workspace }}/.flutter-sdk
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Flutter SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.FLUTTER_SDK }}
+          key: ${{ runner.os }}-flutter-${{ env.FLUTTER_VERSION }}
+
+      - name: Set up Flutter
+        run: bash scripts/setup_flutter_android.sh
+
+      - name: Expose Flutter on PATH
+        run: |
+          echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS (release)
+        run: flutter build macos --release
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: build/macos/Build/Products/Release/
+
+      - name: Build iOS (release, no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Upload iOS build output (unsigned)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-unsigned
+          path: build/ios/iphoneos/
