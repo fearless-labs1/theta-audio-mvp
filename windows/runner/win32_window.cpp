@@ -330,8 +330,11 @@ void Win32Window::InitializeCustomChrome() {
   }
 
   LONG style = GetWindowLong(window_handle_, GWL_STYLE);
-  style &= ~WS_CAPTION;
+  style &= ~(WS_CAPTION | WS_THICKFRAME | WS_BORDER);
   SetWindowLong(window_handle_, GWL_STYLE, style);
+  LONG ex_style = GetWindowLong(window_handle_, GWL_EXSTYLE);
+  ex_style &= ~WS_EX_CLIENTEDGE;
+  SetWindowLong(window_handle_, GWL_EXSTYLE, ex_style);
   SetWindowPos(window_handle_, nullptr, 0, 0, 0, 0,
                SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
                    SWP_NOACTIVATE);

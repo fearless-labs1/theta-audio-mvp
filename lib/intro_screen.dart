@@ -70,6 +70,11 @@ class _IntroScreenState extends State<IntroScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+
+        precacheImage(
+          const AssetImage('assets/images/LATEST PC.png'),
+          context,
+        );
         _initializeIntroVideo();
       }
     });
@@ -580,11 +585,12 @@ class _IntroScreenState extends State<IntroScreen> {
   Widget _buildVideoContent() {
     // Show intro video
     if (_showingIntro && _isIntroInitialized && _introVideoController != null) {
-      return Center(
-        child: AspectRatio(
-          aspectRatio: _introVideoController!.value.aspectRatio > 0
-              ? _introVideoController!.value.aspectRatio
-              : 16 / 9,
+      final size = _introVideoController!.value.size;
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: size.width,
+          height: size.height,
           child: VideoPlayer(_introVideoController!),
         ),
       );
@@ -594,11 +600,12 @@ class _IntroScreenState extends State<IntroScreen> {
     if (_showingInstruction &&
         _isInstructionInitialized &&
         _instructionVideoController != null) {
-      return Center(
-        child: AspectRatio(
-          aspectRatio: _instructionVideoController!.value.aspectRatio > 0
-              ? _instructionVideoController!.value.aspectRatio
-              : 16 / 9,
+      final size = _instructionVideoController!.value.size;
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: size.width,
+          height: size.height,
           child: VideoPlayer(_instructionVideoController!),
         ),
       );
