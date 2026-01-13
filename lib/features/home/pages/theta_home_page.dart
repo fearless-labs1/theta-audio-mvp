@@ -34,7 +34,6 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   final ThetaAudioService _audioService = ThetaAudioService();
 
   // SEPARATE audio player for dialog TTS (What is Theta, Guide Me info)
-  @override
   final AudioPlayer _dialogAudioPlayer = AudioPlayer();
   StreamSubscription<void>? _dialogCompleteSubscription;
 
