@@ -160,12 +160,16 @@ jobs:
           "${FLUTTER_SDK}/bin/flutter" --version
           echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
 
-      - name: Install CocoaPods
+            - name: Install CocoaPods (iOS)
         run: |
           sudo gem install cocoapods -N
-          cd ios
-          pod install
-          cd ..
+          if [ -f "ios/Podfile" ]; then
+            cd ios
+            pod install --repo-update
+            cd ..
+          else
+            echo "No ios/Podfile found — skipping CocoaPods."
+          fi
 
 
       - name: Cache pub dependencies
