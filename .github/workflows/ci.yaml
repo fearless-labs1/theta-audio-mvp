@@ -134,7 +134,7 @@ jobs:
           name: android-release-appbundle
           path: build/app/outputs/bundle/release/app-release.aab
 
-    apple:
+  apple:
     name: Apple builds (macOS + iOS)
     runs-on: macos-latest
 
@@ -149,12 +149,21 @@ jobs:
           channel: "stable"
           cache: true
 
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: macos-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            macos-pub-
+
       - name: Install dependencies
         run: flutter pub get
         shell: bash
 
       - name: Install CocoaPods (iOS)
-        
+        run: |
           sudo gem install cocoapods -N
           if [ -f "ios/Podfile" ]; then
             cd ios
@@ -178,38 +187,6 @@ jobs:
       - name: Build iOS (release, no codesign)
         run: flutter build ios --release --no-codesign
         shell: bash
-
-      - name: Upload iOS build output (unsigned)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-build-unsigned
-          path: build/ios/iphoneos/
-
-
-
-      - name: Cache pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build macOS (release)
-        run: flutter build macos --release
-
-      - name: Upload macOS artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-release
-          path: build/macos/Build/Products/Release/
-
-      - name: Build iOS (release, no codesign)
-        run: flutter build ios --release --no-codesign
 
       - name: Upload iOS build output (unsigned)
         uses: actions/upload-artifact@v4
