@@ -161,7 +161,7 @@ jobs:
           echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
 
             - name: Install CocoaPods (iOS)
-        run: |
+
           sudo gem install cocoapods -N
           if [ -f "ios/Podfile" ]; then
             cd ios
