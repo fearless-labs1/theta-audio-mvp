@@ -134,6 +134,38 @@ jobs:
           name: android-release-appbundle
           path: build/app/outputs/bundle/release/app-release.aab
 
+  windows:
+    name: Windows build
+    runs-on: windows-latest
+    env:
+      FLUTTER_VERSION: '3.38.5'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (Windows)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable Windows desktop support
+        run: flutter config --enable-windows-desktop
+
+      - name: Build Windows (release)
+        run: flutter build windows --release
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: build/windows/x64/runner/Release/
+
   apple:
     name: Apple builds (macOS + iOS)
     runs-on: macos-latest
@@ -160,8 +192,8 @@ jobs:
           "${FLUTTER_SDK}/bin/flutter" --version
           echo "${FLUTTER_SDK}/bin" >> "$GITHUB_PATH"
 
-            - name: Install CocoaPods (iOS)
-
+      - name: Install CocoaPods (iOS)
+        run: |
           sudo gem install cocoapods -N
           if [ -f "ios/Podfile" ]; then
             cd ios
