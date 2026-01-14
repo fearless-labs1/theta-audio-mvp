@@ -26,20 +26,27 @@ mixin _HomePageBuild on State<ThetaHomePage> {
   Future<void> _sendQuestionToGPT(String question);
   String _getStatusText();
   Widget _buildPrayerSyncBadge();
+
   Widget buildHomePage(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
           // LAYER 1: Background wallpaper with opacity fade
-          Positioned.fill(
-            child: Opacity(
-              opacity: _backgroundOpacity,
-              child: Image.asset(
-                'assets/images/LATEST MOBILE.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
+Positioned.fill(
+  child: Opacity(
+    opacity: _backgroundOpacity,
+    child: Image.asset(
+      'assets/images/latest_mobile.png',
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      errorBuilder: (context, error, stackTrace) {
+        // Prevent the red ❌ placeholder from flashing during startup.
+        return const ColoredBox(color: Colors.black);
+      },
+    ),
+  ),
+),
+
 
           // LAYER 2: Pitch black background (fades in as wallpaper fades out)
           Positioned.fill(
@@ -156,9 +163,7 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                           ),
                         )
                       else
-                        const Expanded(
-                            child:
-                                SizedBox()), // Spacer keeps bottom elements in position
+                        const Expanded(child: SizedBox()),
 
                       // Aesthetic gap below Divine Shuffle
                       const SizedBox(height: 8),
@@ -250,7 +255,8 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                                             : Colors.black,
                                         foregroundColor: Colors.white,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(25),
+                                          borderRadius:
+                                              BorderRadius.circular(25),
                                         ),
                                         elevation: 0,
                                         padding: const EdgeInsets.symmetric(
@@ -336,7 +342,10 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                     children: [
                       // Row 1: START/REPEAT and STOP buttons
                       LayoutBuilder(builder: (context, constraints) {
-                        final buttonWidth = (constraints.maxWidth - 12) / 4;
+                        final double buttonWidth =
+                            ((constraints.maxWidth - 12) / 2)
+                                .clamp(180.0, 240.0);
+
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -360,22 +369,23 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.play_arrow,
-                                        size: 22,
-                                        color: (_isGoliathMode ||
-                                                _buttonsDisabled)
-                                            ? Colors.grey
-                                            : Colors.green),
+                                    Icon(
+                                      Icons.play_arrow,
+                                      size: 22,
+                                      color: (_isGoliathMode || _buttonsDisabled)
+                                          ? Colors.grey
+                                          : Colors.green,
+                                    ),
                                     const SizedBox(width: 6),
                                     Text(
                                       'Start / Repeat',
                                       style: GoogleFonts.montserrat(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: (_isGoliathMode ||
-                                                _buttonsDisabled)
-                                            ? Colors.grey
-                                            : Colors.black,
+                                        color:
+                                            (_isGoliathMode || _buttonsDisabled)
+                                                ? Colors.grey
+                                                : Colors.black,
                                       ),
                                     ),
                                   ],
@@ -407,13 +417,15 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.stop,
-                                        size: 22,
-                                        color: (_isActive &&
-                                                !_isGoliathMode &&
-                                                !_buttonsDisabled)
-                                            ? Colors.red
-                                            : Colors.grey),
+                                    Icon(
+                                      Icons.stop,
+                                      size: 22,
+                                      color: (_isActive &&
+                                              !_isGoliathMode &&
+                                              !_buttonsDisabled)
+                                          ? Colors.red
+                                          : Colors.grey,
+                                    ),
                                     const SizedBox(width: 6),
                                     Text(
                                       'Stop Theta',
@@ -528,7 +540,9 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                 child: Text(
                   _errorMessage!,
                   style: GoogleFonts.montserrat(
-                      color: Colors.white, fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -543,8 +557,9 @@ mixin _HomePageBuild on State<ThetaHomePage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white)),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Initializing Theta...',
