@@ -11,22 +11,22 @@ dependencies:
     sdk: flutter
   
   # Audio playback engine
-  audioplayers: ^6.1.0
+  audioplayers: ^6.5.1
   
   # Background audio service
-  audio_service: ^0.18.12
+  audio_service: ^0.18.18
   
   # Video playback
-  video_player: ^2.8.1
+  video_player: ^2.10.1
     
   # HTTP requests (for Guide Me API)
-  http: ^1.1.0
+  http: ^1.6.0
   
   # Google Fonts (Option 5 "Soft & Spiritual" styling)
-  google_fonts: ^6.1.0
+  google_fonts: ^6.3.3
   
   # Native splash screen (FIX: Prevents icon showing on white screen at startup)
-  flutter_native_splash: ^2.3.8
+  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
   flutter_test:

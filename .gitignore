@@ -6,4 +6,4 @@ generate_what_is_theta.py
 .dart_tool
 .flutter-plugins-dependencies
 .flutter-plugins
-macos/Flutter
+macos/Flutter/ephemeral/
