@@ -22,6 +22,7 @@
 // - Smooth fade transitions
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:theta_audio_mvp/app/router.dart';
@@ -64,6 +65,8 @@ class _IntroScreenState extends State<IntroScreen> {
   bool _showFadeOverlay = false;
   bool _showLatestPc = false;
   double _latestPcOpacity = 0.0;
+  final bool _allowPlaybackFallbacks =
+      defaultTargetPlatform != TargetPlatform.windows;
 
   @override
   void initState() {
@@ -71,7 +74,7 @@ class _IntroScreenState extends State<IntroScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         precacheImage(
-          const AssetImage('assets/images/LATEST PC.png'),
+          const AssetImage('assets/images/latest_pc.png'),
           context,
         );
         _initializeIntroVideo();
@@ -117,11 +120,13 @@ class _IntroScreenState extends State<IntroScreen> {
       // Wait for first frame to actually render (surface-ready detection)
       await _waitForFirstFrame(_introVideoController!, 'intro');
 
-      // Start timeout timer (fallback if video hangs)
-      _startIntroTimeout();
+      if (_allowPlaybackFallbacks) {
+        // Start timeout timer (fallback if video hangs)
+        _startIntroTimeout();
 
-      // Start playback monitor to detect stuck video
-      _startPlaybackMonitor();
+        // Start playback monitor to detect stuck video
+        _startPlaybackMonitor();
+      }
 
       // Pre-load instruction video while intro plays
       _preloadInstructionVideo();
@@ -153,8 +158,10 @@ class _IntroScreenState extends State<IntroScreen> {
       await _introVideoController!.play();
 
       await _waitForFirstFrame(_introVideoController!, 'intro');
-      _startIntroTimeout();
-      _startPlaybackMonitor();
+      if (_allowPlaybackFallbacks) {
+        _startIntroTimeout();
+        _startPlaybackMonitor();
+      }
       _preloadInstructionVideo();
     } catch (e) {
       debugPrint('❌ Fallback also failed: $e');
@@ -405,7 +412,9 @@ class _IntroScreenState extends State<IntroScreen> {
     await _waitForFirstFrame(_instructionVideoController!, 'instruction');
 
     // Start timeout timer
-    _startInstructionTimeout();
+    if (_allowPlaybackFallbacks) {
+      _startInstructionTimeout();
+    }
   }
 
   // Start timeout timer for instruction video
@@ -470,40 +479,17 @@ class _IntroScreenState extends State<IntroScreen> {
     _introVideoController?.pause();
     _instructionVideoController?.pause();
 
-    // Show fade overlay
-    setState(() {
-      _showFadeOverlay = true;
-    });
-
-    // Animate fade to white (800ms)
-    for (int i = 0; i <= 16; i++) {
-      await Future.delayed(const Duration(milliseconds: 50));
-      if (mounted) {
-        setState(() {
-          _fadeOverlay = i / 16.0;
-        });
-      }
-    }
-
-    debugPrint('✅ Fade to white complete');
-
-    // Fade in LATEST PC splash on white overlay
+    // Show white overlay and LATEST PC splash immediately
     if (mounted) {
       setState(() {
+        _showFadeOverlay = true;
+        _fadeOverlay = 1.0;
         _showLatestPc = true;
+        _latestPcOpacity = 1.0;
       });
 
-      for (int i = 0; i <= 16; i++) {
-        await Future.delayed(const Duration(milliseconds: 50));
-        if (mounted) {
-          setState(() {
-            _latestPcOpacity = i / 16.0;
-          });
-        }
-      }
-
       // Briefly hold the splash before navigating
-      await Future.delayed(const Duration(milliseconds: 800));
+      await Future.delayed(const Duration(milliseconds: 1200));
     }
 
     // Navigate to main app with fade transition (4000ms)
@@ -567,10 +553,11 @@ class _IntroScreenState extends State<IntroScreen> {
                 child: Container(
                   color: Colors.white,
                   child: Center(
-                    child: Image.asset(
-                      'assets/images/LATEST PC.png',
-                      width: 320,
-                      fit: BoxFit.contain,
+                    child: SizedBox.expand(
+                      child: Image.asset(
+                        'assets/images/latest_pc.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),
@@ -584,40 +571,14 @@ class _IntroScreenState extends State<IntroScreen> {
   Widget _buildVideoContent() {
     // Show intro video
     if (_showingIntro && _isIntroInitialized && _introVideoController != null) {
-      final size = _introVideoController!.value.size;
-      return ColoredBox(
-        color: Colors.black,
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.contain, // ✅ FIX: no crop/zoom
-            child: SizedBox(
-              width: size.width,
-              height: size.height,
-              child: VideoPlayer(_introVideoController!),
-            ),
-          ),
-        ),
-      );
+      return _buildVideoPlayer(_introVideoController!);
     }
 
     // Show instruction video
     if (_showingInstruction &&
         _isInstructionInitialized &&
         _instructionVideoController != null) {
-      final size = _instructionVideoController!.value.size;
-      return ColoredBox(
-        color: Colors.black,
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.contain, // ✅ FIX: no crop/zoom
-            child: SizedBox(
-              width: size.width,
-              height: size.height,
-              child: VideoPlayer(_instructionVideoController!),
-            ),
-          ),
-        ),
-      );
+      return _buildVideoPlayer(_instructionVideoController!);
     }
 
     // Show subtle loading spinner
@@ -628,6 +589,21 @@ class _IntroScreenState extends State<IntroScreen> {
         child: CircularProgressIndicator(
           strokeWidth: 2,
           valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPlayer(VideoPlayerController controller) {
+    final aspectRatio = controller.value.aspectRatio;
+    final safeAspectRatio = aspectRatio > 0 ? aspectRatio : 16 / 9;
+
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: safeAspectRatio,
+          child: VideoPlayer(controller),
         ),
       ),
     );
