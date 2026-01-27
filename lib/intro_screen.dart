@@ -22,7 +22,6 @@
 // - Smooth fade transitions
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:theta_audio_mvp/app/router.dart';
@@ -65,8 +64,7 @@ class _IntroScreenState extends State<IntroScreen> {
   bool _showFadeOverlay = false;
   bool _showLatestPc = false;
   double _latestPcOpacity = 0.0;
-  final bool _allowPlaybackFallbacks =
-      defaultTargetPlatform != TargetPlatform.windows;
+  final bool _allowPlaybackFallbacks = true;
 
   @override
   void initState() {
@@ -117,6 +115,8 @@ class _IntroScreenState extends State<IntroScreen> {
       await _introVideoController!.play();
       debugPrint('▶️ Intro video play() called...');
 
+      await _ensurePlaybackStarted(_introVideoController!, 'intro');
+
       // Wait for first frame to actually render (surface-ready detection)
       await _waitForFirstFrame(_introVideoController!, 'intro');
 
@@ -157,6 +157,8 @@ class _IntroScreenState extends State<IntroScreen> {
       _introVideoController!.addListener(_checkIntroProgress);
       await _introVideoController!.play();
 
+      await _ensurePlaybackStarted(_introVideoController!, 'intro');
+
       await _waitForFirstFrame(_introVideoController!, 'intro');
       if (_allowPlaybackFallbacks) {
         _startIntroTimeout();
@@ -186,6 +188,12 @@ class _IntroScreenState extends State<IntroScreen> {
       final position = controller.value.position;
       final isPlaying = controller.value.isPlaying;
 
+      if (controller.value.hasError) {
+        debugPrint(
+            '❌ Video error while waiting for first frame ($videoName): ${controller.value.errorDescription}');
+        return;
+      }
+
       if (isPlaying && position.inMilliseconds > 0) {
         debugPrint(
             '✅ First frame rendered ($videoName) - position: ${position.inMilliseconds}ms');
@@ -208,6 +216,28 @@ class _IntroScreenState extends State<IntroScreen> {
     }
 
     debugPrint('⚠️ First frame wait timeout ($videoName) - proceeding anyway');
+  }
+
+  Future<void> _ensurePlaybackStarted(
+      VideoPlayerController controller, String videoName) async {
+    if (!controller.value.isInitialized) {
+      return;
+    }
+
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      await Future.delayed(const Duration(milliseconds: 250));
+      final value = controller.value;
+      if (value.isPlaying ||
+          value.position.inMilliseconds > 0 ||
+          value.isBuffering) {
+        return;
+      }
+
+      debugPrint(
+          '↻ $videoName playback not started (attempt $attempt) - retrying');
+      await controller.seekTo(Duration.zero);
+      await controller.play();
+    }
   }
 
   // Start timeout timer for intro video
@@ -407,6 +437,8 @@ class _IntroScreenState extends State<IntroScreen> {
 
     await _instructionVideoController!.play();
     debugPrint('▶️ Instruction video playing...');
+
+    await _ensurePlaybackStarted(_instructionVideoController!, 'instruction');
 
     // Wait for first frame
     await _waitForFirstFrame(_instructionVideoController!, 'instruction');
