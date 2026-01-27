@@ -92,10 +92,22 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   // Goliath Mode
   @override
   bool _isGoliathMode = false;
+  String _lastSessionType = '';
+  late final VoidCallback _refreshListener;
 
   @override
   void initState() {
     super.initState();
+    _refreshListener = () {
+      if (!mounted || !_isActive || _isGoliathMode) return;
+      final newSessionType = _getSessionType();
+      if (_lastSessionType != newSessionType) {
+        setState(() {
+          _lastSessionType = newSessionType;
+        });
+      }
+    };
+    refreshNotifier.addListener(_refreshListener);
     _initializeApp();
   }
 
@@ -168,10 +180,14 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
   void _handlePeriodicRefresh() {
     if (!mounted) return;
-    if (_isActive && !_isGoliathMode) {
-      setState(() {}); // Triggers UI rebuild to update time status
-    }
-    _divineShuffleKey.currentState?.refreshSessionIfNeeded();
+    refreshNotifier.value++;
+  }
+
+  String _getSessionType() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 11) return 'morning';
+    if (hour >= 11 && hour < 18) return 'midday';
+    return 'evening';
   }
 
   /// NEW: Called when prayer changes (Divine Shuffle sync)
@@ -825,6 +841,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     _dialogAudioPlayer.dispose();
     _musicPlayer?.dispose();
     _guideMeController.dispose();
+    refreshNotifier.removeListener(_refreshListener);
     super.dispose();
   }
 

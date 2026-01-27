@@ -25,6 +25,8 @@ import 'prayers_list.dart';
 import 'goliath_prayers_list.dart';
 import 'prayer_texts.dart';
 
+final ValueNotifier<int> refreshNotifier = ValueNotifier<int>(0);
+
 class DivineShufflePopup extends StatefulWidget {
   final bool isVisible;
   final bool isGoliathMode;
@@ -91,6 +93,7 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   // Auto-scroll for highlighted prayer card (green/blue box)
   final ScrollController _prayerCardScrollController = ScrollController();
   Timer? _prayerCardAutoScrollTimer;
+  late final VoidCallback _refreshListener;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // COLORS - Option 5 "Soft & Spiritual" Theme (EXACT MATCH)
@@ -115,6 +118,11 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
     super.initState();
     _initializePrayerList();
     _currentSessionType = _getSessionType();
+    _refreshListener = () {
+      if (!mounted || _currentIntroPart != 0) return;
+      _checkSessionChange();
+    };
+    refreshNotifier.addListener(_refreshListener);
 
     if (widget.isVisible) {
       _startIntroSequence();
@@ -153,6 +161,7 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
     _part3ScrollController.dispose();
     _prayerCardScrollController.dispose();
     _ttsPlayer?.dispose();
+    refreshNotifier.removeListener(_refreshListener);
     super.dispose();
   }
 
@@ -331,11 +340,6 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   // ═══════════════════════════════════════════════════════════════════════════
   // SESSION CHANGE DETECTION (Time-based transitions)
   // ═══════════════════════════════════════════════════════════════════════════
-
-  void refreshSessionIfNeeded() {
-    if (!mounted || _currentIntroPart != 0) return;
-    _checkSessionChange();
-  }
 
   void _checkSessionChange() {
     if (!mounted || widget.isGoliathMode) {
