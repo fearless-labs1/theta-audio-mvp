@@ -130,9 +130,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
       // Start status auto-refresh timer (every 1 minute)
       _statusRefreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-        if (mounted && _isActive && !_isGoliathMode) {
-          setState(() {}); // Triggers UI rebuild to update time status
-        }
+        _handlePeriodicRefresh();
       });
 
       setState(() {
@@ -143,6 +141,9 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
       // Start wallpaper fade-in over 4 seconds (opacity 0→1)
       _startWallpaperFadeIn();
+
+      // Refresh status immediately instead of waiting for the first timer tick.
+      _handlePeriodicRefresh();
 
       // Divine Shuffle appears at 7 seconds (3 seconds after wallpaper fade-in completes at 4s)
       Future.delayed(const Duration(seconds: 7), () {
@@ -163,6 +164,14 @@ class _ThetaHomePageState extends State<ThetaHomePage>
         _isInitialized = false;
       });
     }
+  }
+
+  void _handlePeriodicRefresh() {
+    if (!mounted) return;
+    if (_isActive && !_isGoliathMode) {
+      setState(() {}); // Triggers UI rebuild to update time status
+    }
+    _divineShuffleKey.currentState?.refreshSessionIfNeeded();
   }
 
   /// NEW: Called when prayer changes (Divine Shuffle sync)

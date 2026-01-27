@@ -87,7 +87,6 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
 
   // Track previous session for time-based changes
   String _currentSessionType = '';
-  Timer? _sessionCheckTimer;
 
   // Auto-scroll for highlighted prayer card (green/blue box)
   final ScrollController _prayerCardScrollController = ScrollController();
@@ -146,7 +145,6 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   @override
   void dispose() {
     _shuffleTimer?.cancel();
-    _sessionCheckTimer?.cancel();
     _introScrollTimer?.cancel();
     _prayerCardAutoScrollTimer?.cancel();
     _ttsCompletionSubscription?.cancel();
@@ -328,19 +326,21 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
     });
 
     widget.onPhase1Complete?.call();
-
-    // Start session check timer (check every 60 seconds for time-based changes)
-    _sessionCheckTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      _checkSessionChange();
-    });
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SESSION CHANGE DETECTION (Time-based transitions)
   // ═══════════════════════════════════════════════════════════════════════════
 
+  void refreshSessionIfNeeded() {
+    if (!mounted || _currentIntroPart != 0) return;
+    _checkSessionChange();
+  }
+
   void _checkSessionChange() {
-    if (widget.isGoliathMode) return; // Don't check time when in Goliath mode
+    if (!mounted || widget.isGoliathMode) {
+      return; // Don't check time when in Goliath mode or after disposal
+    }
 
     final newSessionType = _getSessionType();
     if (newSessionType != _currentSessionType) {
@@ -351,10 +351,12 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   }
 
   Future<void> _handleSessionChange(String newSession) async {
+    if (!mounted) return;
     // Fade out top panel
     setState(() => _topPanelOpacity = 0.0);
     await Future.delayed(const Duration(milliseconds: 500));
 
+    if (!mounted) return;
     // Update prayer list and session
     _currentSessionType = newSession;
     _initializePrayerList();
