@@ -65,6 +65,11 @@ class _IntroScreenState extends State<IntroScreen> {
   bool _showLatestPc = false;
   double _latestPcOpacity = 0.0;
   final bool _allowPlaybackFallbacks = true;
+  bool _introPlaybackStarted = false;
+  bool _instructionPlaybackStarted = false;
+  int _introInitRetryCount = 0;
+  int _instructionInitRetryCount = 0;
+  static const int _maxInitRetries = 2;
 
   @override
   void initState() {
@@ -83,6 +88,8 @@ class _IntroScreenState extends State<IntroScreen> {
   // Initialize intro video (Video 1) with surface-ready detection
   Future<void> _initializeIntroVideo() async {
     try {
+      _introVideoController?.removeListener(_checkIntroProgress);
+      _introVideoController?.dispose();
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('🎬 THETA INTRO SCREEN - INITIALIZING VIDEO 1 (INTRO)');
       debugPrint('═══════════════════════════════════════════════════════');
@@ -113,6 +120,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
       // Start playback
       await _introVideoController!.play();
+      _introPlaybackStarted = true;
       debugPrint('▶️ Intro video play() called...');
 
       await _ensurePlaybackStarted(_introVideoController!, 'intro');
@@ -156,6 +164,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
       _introVideoController!.addListener(_checkIntroProgress);
       await _introVideoController!.play();
+      _introPlaybackStarted = true;
 
       await _ensurePlaybackStarted(_introVideoController!, 'intro');
 
@@ -167,8 +176,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _preloadInstructionVideo();
     } catch (e) {
       debugPrint('❌ Fallback also failed: $e');
-      // Skip to instruction video
-      _switchToInstructionVideo();
+      _retryIntroInitialization();
     }
   }
 
@@ -250,7 +258,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
     _introTimeoutTimer?.cancel();
     _introTimeoutTimer = Timer(timeoutDuration, () {
-      if (!_introCompleted && mounted) {
+      if (!_introCompleted && mounted && _introPlaybackStarted) {
         debugPrint('⚠️ INTRO VIDEO TIMEOUT - forcing switch to instruction');
         _switchToInstructionVideo();
       }
@@ -305,7 +313,9 @@ class _IntroScreenState extends State<IntroScreen> {
 
           if (_stuckFrameCount >= 6) {
             debugPrint('🔄 Video stuck for 3 seconds - forcing navigation');
-            _startFadeAndNavigate();
+            if (_instructionPlaybackStarted) {
+              _markInstructionComplete('INSTRUCTION VIDEO STUCK');
+            }
           }
         } else {
           _stuckFrameCount = 0;
@@ -405,6 +415,8 @@ class _IntroScreenState extends State<IntroScreen> {
       debugPrint('🎬 INITIALIZING VIDEO 2 (INSTRUCTION)');
       debugPrint('═══════════════════════════════════════════════════════');
 
+      _instructionVideoController?.removeListener(_checkInstructionProgress);
+      _instructionVideoController?.dispose();
       _instructionVideoController = VideoPlayerController.asset(
         'assets/video/instruction_vid.mp4',
       );
@@ -420,15 +432,14 @@ class _IntroScreenState extends State<IntroScreen> {
     } catch (e, stack) {
       debugPrint('❌ ERROR LOADING INSTRUCTION VIDEO: $e');
       debugPrint('Stack: $stack');
-      // Skip to main app
-      _startFadeAndNavigate();
+      await _retryInstructionInitialization();
     }
   }
 
   // Start playing instruction video
   Future<void> _startInstructionVideo() async {
     if (_instructionVideoController == null) {
-      _startFadeAndNavigate();
+      await _retryInstructionInitialization();
       return;
     }
 
@@ -436,6 +447,7 @@ class _IntroScreenState extends State<IntroScreen> {
     _instructionVideoController!.addListener(_checkInstructionProgress);
 
     await _instructionVideoController!.play();
+    _instructionPlaybackStarted = true;
     debugPrint('▶️ Instruction video playing...');
 
     await _ensurePlaybackStarted(_instructionVideoController!, 'instruction');
@@ -460,9 +472,9 @@ class _IntroScreenState extends State<IntroScreen> {
 
     _instructionTimeoutTimer?.cancel();
     _instructionTimeoutTimer = Timer(timeoutDuration, () {
-      if (!_instructionCompleted && mounted) {
+      if (!_instructionCompleted && mounted && _instructionPlaybackStarted) {
         debugPrint('⚠️ INSTRUCTION VIDEO TIMEOUT - forcing navigation');
-        _startFadeAndNavigate();
+        _markInstructionComplete('INSTRUCTION VIDEO TIMEOUT');
       }
     });
   }
@@ -478,8 +490,7 @@ class _IntroScreenState extends State<IntroScreen> {
     // Check for completion
     if (duration.inMilliseconds > 0 &&
         position.inMilliseconds >= duration.inMilliseconds - 100) {
-      debugPrint('✅ INSTRUCTION VIDEO COMPLETE');
-      _startFadeAndNavigate();
+      _markInstructionComplete('INSTRUCTION VIDEO COMPLETE');
       return;
     }
 
@@ -487,16 +498,52 @@ class _IntroScreenState extends State<IntroScreen> {
     if (!value.isPlaying &&
         duration.inMilliseconds > 0 &&
         position.inMilliseconds > duration.inMilliseconds - 500) {
-      debugPrint('✅ INSTRUCTION VIDEO STOPPED NEAR END - treating as complete');
-      _startFadeAndNavigate();
+      _markInstructionComplete('INSTRUCTION VIDEO STOPPED NEAR END');
     }
+  }
+
+  void _markInstructionComplete(String reason) {
+    if (_instructionCompleted) return;
+    debugPrint('✅ $reason');
+    _instructionCompleted = true;
+    _startFadeAndNavigate();
+  }
+
+  Future<void> _retryIntroInitialization() async {
+    if (_introInitRetryCount >= _maxInitRetries || !mounted) {
+      debugPrint('⚠️ Intro video failed after retries - switching to instruction');
+      _switchToInstructionVideo();
+      return;
+    }
+
+    _introInitRetryCount++;
+    debugPrint('↻ Retrying intro initialization ($_introInitRetryCount)');
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    await _initializeIntroVideo();
+  }
+
+  Future<void> _retryInstructionInitialization() async {
+    if (_instructionInitRetryCount >= _maxInitRetries || !mounted) {
+      debugPrint(
+          '⚠️ Instruction video failed after retries - proceeding to splash');
+      _instructionCompleted = true;
+      _startFadeAndNavigate();
+      return;
+    }
+
+    _instructionInitRetryCount++;
+    debugPrint(
+        '↻ Retrying instruction initialization ($_instructionInitRetryCount)');
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    await _initializeInstructionVideo();
   }
 
   // Start fade to white and navigate to main app
   Future<void> _startFadeAndNavigate() async {
-    if (_hasNavigated) return;
+    if (_hasNavigated || !_instructionCompleted) return;
     _hasNavigated = true;
-    _instructionCompleted = true;
 
     debugPrint('═══════════════════════════════════════════════════════');
     debugPrint('🌟 STARTING FADE TRANSITION (800ms white, 4000ms navigate)');
