@@ -70,6 +70,8 @@ class _IntroScreenState extends State<IntroScreen> {
   int _introInitRetryCount = 0;
   int _instructionInitRetryCount = 0;
   static const int _maxInitRetries = 2;
+  bool _isIntroInitializing = false;
+  bool _isInstructionInitializing = false;
 
   @override
   void initState() {
@@ -87,6 +89,8 @@ class _IntroScreenState extends State<IntroScreen> {
 
   // Initialize intro video (Video 1) with surface-ready detection
   Future<void> _initializeIntroVideo() async {
+    if (_isIntroInitializing) return;
+    _isIntroInitializing = true;
     try {
       _introVideoController?.removeListener(_checkIntroProgress);
       _introVideoController?.dispose();
@@ -143,6 +147,8 @@ class _IntroScreenState extends State<IntroScreen> {
       debugPrint('Stack: $stack');
       // Try MOV format as fallback
       _tryFallbackIntroFormat();
+    } finally {
+      _isIntroInitializing = false;
     }
   }
 
@@ -410,6 +416,8 @@ class _IntroScreenState extends State<IntroScreen> {
 
   // Initialize instruction video if not pre-loaded
   Future<void> _initializeInstructionVideo() async {
+    if (_isInstructionInitializing) return;
+    _isInstructionInitializing = true;
     try {
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('🎬 INITIALIZING VIDEO 2 (INSTRUCTION)');
@@ -433,6 +441,8 @@ class _IntroScreenState extends State<IntroScreen> {
       debugPrint('❌ ERROR LOADING INSTRUCTION VIDEO: $e');
       debugPrint('Stack: $stack');
       await _retryInstructionInitialization();
+    } finally {
+      _isInstructionInitializing = false;
     }
   }
 
@@ -510,32 +520,44 @@ class _IntroScreenState extends State<IntroScreen> {
   }
 
   Future<void> _retryIntroInitialization() async {
-    if (_introInitRetryCount >= _maxInitRetries || !mounted) {
-      debugPrint('⚠️ Intro video failed after retries - switching to instruction');
-      _switchToInstructionVideo();
+    if (!mounted) {
       return;
     }
 
-    _introInitRetryCount++;
+    if (_introInitRetryCount >= _maxInitRetries) {
+      debugPrint(
+          '⚠️ Intro video failed after retries - continuing to retry...');
+      _introInitRetryCount = 0;
+    } else {
+      _introInitRetryCount++;
+    }
+
+    final delay =
+        Duration(milliseconds: 750 + (_introInitRetryCount * 250));
     debugPrint('↻ Retrying intro initialization ($_introInitRetryCount)');
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(delay);
     if (!mounted) return;
     await _initializeIntroVideo();
   }
 
   Future<void> _retryInstructionInitialization() async {
-    if (_instructionInitRetryCount >= _maxInitRetries || !mounted) {
-      debugPrint(
-          '⚠️ Instruction video failed after retries - proceeding to splash');
-      _instructionCompleted = true;
-      _startFadeAndNavigate();
+    if (!mounted) {
       return;
     }
 
-    _instructionInitRetryCount++;
+    if (_instructionInitRetryCount >= _maxInitRetries) {
+      debugPrint(
+          '⚠️ Instruction video failed after retries - continuing to retry...');
+      _instructionInitRetryCount = 0;
+    } else {
+      _instructionInitRetryCount++;
+    }
+
+    final delay =
+        Duration(milliseconds: 750 + (_instructionInitRetryCount * 250));
     debugPrint(
         '↻ Retrying instruction initialization ($_instructionInitRetryCount)');
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(delay);
     if (!mounted) return;
     await _initializeInstructionVideo();
   }
