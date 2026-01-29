@@ -72,7 +72,7 @@ class _IntroScreenState extends State<IntroScreen> {
   static const int _maxInitRetries = 2;
   bool _isIntroInitializing = false;
   bool _isInstructionInitializing = false;
-  static const Duration _videoInitTimeout = Duration(seconds: 8);
+  static const Duration _videoInitTimeout = Duration(seconds: 30);
 
   @override
   void initState() {
