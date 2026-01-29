@@ -72,6 +72,7 @@ class _IntroScreenState extends State<IntroScreen> {
   static const int _maxInitRetries = 2;
   bool _isIntroInitializing = false;
   bool _isInstructionInitializing = false;
+  static const Duration _videoInitTimeout = Duration(seconds: 8);
 
   @override
   void initState() {
@@ -94,6 +95,7 @@ class _IntroScreenState extends State<IntroScreen> {
     try {
       _introVideoController?.removeListener(_checkIntroProgress);
       _introVideoController?.dispose();
+      _introPlaybackStarted = false;
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('🎬 THETA INTRO SCREEN - INITIALIZING VIDEO 1 (INTRO)');
       debugPrint('═══════════════════════════════════════════════════════');
@@ -105,7 +107,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
       debugPrint('📹 Loading $videoPath from assets...');
 
-      await _introVideoController!.initialize();
+      await _initializeController(_introVideoController!, 'intro');
 
       debugPrint('✅ Intro video initialized');
       debugPrint(
@@ -158,10 +160,11 @@ class _IntroScreenState extends State<IntroScreen> {
       debugPrint('🔄 Trying fallback format: intro_video.mov');
 
       _introVideoController?.dispose();
+      _introPlaybackStarted = false;
       _introVideoController =
           VideoPlayerController.asset('assets/video/intro_video.mov');
 
-      await _introVideoController!.initialize();
+      await _initializeController(_introVideoController!, 'intro fallback');
       await _introVideoController!.setVolume(1.0);
 
       setState(() {
@@ -340,7 +343,10 @@ class _IntroScreenState extends State<IntroScreen> {
         'assets/video/instruction_vid.mp4',
       );
 
-      await _instructionVideoController!.initialize();
+      await _initializeController(
+        _instructionVideoController!,
+        'instruction preload',
+      );
       await _instructionVideoController!.setVolume(1.0);
 
       setState(() {
@@ -425,11 +431,12 @@ class _IntroScreenState extends State<IntroScreen> {
 
       _instructionVideoController?.removeListener(_checkInstructionProgress);
       _instructionVideoController?.dispose();
+      _instructionPlaybackStarted = false;
       _instructionVideoController = VideoPlayerController.asset(
         'assets/video/instruction_vid.mp4',
       );
 
-      await _instructionVideoController!.initialize();
+      await _initializeController(_instructionVideoController!, 'instruction');
       await _instructionVideoController!.setVolume(1.0);
 
       setState(() {
@@ -517,6 +524,15 @@ class _IntroScreenState extends State<IntroScreen> {
     debugPrint('✅ $reason');
     _instructionCompleted = true;
     _startFadeAndNavigate();
+  }
+
+  Future<void> _initializeController(
+      VideoPlayerController controller, String label) async {
+    try {
+      await controller.initialize().timeout(_videoInitTimeout);
+    } on TimeoutException {
+      throw TimeoutException('Video init timed out: $label');
+    }
   }
 
   Future<void> _retryIntroInitialization() async {
