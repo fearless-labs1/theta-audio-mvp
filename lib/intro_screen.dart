@@ -217,31 +217,19 @@ class _IntroScreenState extends State<IntroScreen> {
         return;
       }
 
-      // Also check if video has frames ready
-      if (controller.value.isInitialized &&
-          controller.value.size.width > 0 &&
-          controller.value.size.height > 0 &&
-          isPlaying) {
-        debugPrint('✅ Video surface ready ($videoName)');
-        return;
-      }
-
-      if (attempts % 10 == 0) {
-        debugPrint(
-            '   Still waiting... attempt $attempts, isPlaying: $isPlaying, position: ${position.inMilliseconds}ms');
+      // Also check if video has frames ready (buffering indicator)
+      if (controller.value.isBuffering) {
+        debugPrint('⏳ Video buffering ($videoName)...');
       }
     }
 
-    debugPrint('⚠️ First frame wait timeout ($videoName) - proceeding anyway');
+    debugPrint(
+        '⚠️ Timeout waiting for first frame ($videoName) after 5 seconds');
   }
 
   Future<void> _ensurePlaybackStarted(
       VideoPlayerController controller, String videoName) async {
-    if (!controller.value.isInitialized) {
-      return;
-    }
-
-    for (var attempt = 1; attempt <= 3; attempt++) {
+    for (int attempt = 1; attempt <= 5; attempt++) {
       await Future.delayed(const Duration(milliseconds: 250));
       final value = controller.value;
       if (value.isPlaying ||
@@ -662,25 +650,39 @@ class _IntroScreenState extends State<IntroScreen> {
             ),
 
           // LATEST PC splash on white background
-          if (_showLatestPc)
-            Positioned.fill(
-              child: AnimatedOpacity(
-                opacity: _latestPcOpacity,
-                duration: const Duration(milliseconds: 50),
-                child: Container(
-                  color: Colors.white,
-                  child: Center(
-                    child: SizedBox.expand(
-                      child: Image.asset(
-                        'assets/images/latest_pc.png',
-                        fit: BoxFit.contain,
-                      ),
+        if (_showLatestPc)
+          Positioned.fill(
+            child: AnimatedOpacity(
+              opacity: _latestPcOpacity,
+              duration: const Duration(milliseconds: 50),
+              child: Container(
+                color: Colors.white,
+                child: Center(
+                  child: SizedBox.expand(
+                    child: Image.asset(
+                      'assets/images/latest_pc.png',
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
               ),
             ),
-        ],
+          ),
+        if (!_isIntroInitialized && !_hasNavigated) _buildLoadingIndicator(),
+      ],
+    ),
+  );
+}
+
+  Widget _buildLoadingIndicator() {
+    return const Center(
+      child: SizedBox(
+        width: 32,
+        height: 32,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
+        ),
       ),
     );
   }
@@ -698,17 +700,7 @@ class _IntroScreenState extends State<IntroScreen> {
       return _buildVideoPlayer(_instructionVideoController!);
     }
 
-    // Show subtle loading spinner
-    return const Center(
-      child: SizedBox(
-        width: 32,
-        height: 32,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
-        ),
-      ),
-    );
+    return const SizedBox.expand();
   }
 
   Widget _buildVideoPlayer(VideoPlayerController controller) {
