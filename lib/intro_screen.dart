@@ -22,6 +22,7 @@
 // - Smooth fade transitions
 
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:theta_audio_mvp/app/router.dart';
@@ -53,6 +54,7 @@ class _IntroScreenState extends State<IntroScreen> {
   Timer? _introTimeoutTimer;
   Timer? _instructionTimeoutTimer;
   Timer? _playbackMonitorTimer;
+  Timer? _windowsFallbackTimer;
 
   // Track last position for stuck detection
   Duration _lastIntroPosition = Duration.zero;
@@ -84,6 +86,21 @@ class _IntroScreenState extends State<IntroScreen> {
           context,
         );
         _initializeIntroVideo();
+        if (Platform.isWindows) {
+          _startWindowsFallbackTimer();
+        }
+      }
+    });
+  }
+
+  void _startWindowsFallbackTimer() {
+    _windowsFallbackTimer?.cancel();
+    _windowsFallbackTimer = Timer(const Duration(seconds: 5), () {
+      if (!mounted || _hasNavigated) return;
+      if (!_introPlaybackStarted && !_instructionPlaybackStarted) {
+        debugPrint(
+            '⚠️ WINDOWS FALLBACK - videos did not start, navigating to home');
+        _startFadeAndNavigate();
       }
     });
   }
@@ -127,6 +144,7 @@ class _IntroScreenState extends State<IntroScreen> {
       // Start playback
       await _introVideoController!.play();
       _introPlaybackStarted = true;
+      _windowsFallbackTimer?.cancel();
       debugPrint('▶️ Intro video play() called...');
 
       await _ensurePlaybackStarted(_introVideoController!, 'intro');
@@ -453,6 +471,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
     await _instructionVideoController!.play();
     _instructionPlaybackStarted = true;
+    _windowsFallbackTimer?.cancel();
     debugPrint('▶️ Instruction video playing...');
 
     await _ensurePlaybackStarted(_instructionVideoController!, 'instruction');
@@ -568,7 +587,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
   // Start fade to white and navigate to main app
   Future<void> _startFadeAndNavigate() async {
-    if (_hasNavigated || !_instructionCompleted) return;
+    if (_hasNavigated) return;
     _hasNavigated = true;
 
     debugPrint('═══════════════════════════════════════════════════════');
@@ -579,6 +598,7 @@ class _IntroScreenState extends State<IntroScreen> {
     _introTimeoutTimer?.cancel();
     _instructionTimeoutTimer?.cancel();
     _playbackMonitorTimer?.cancel();
+    _windowsFallbackTimer?.cancel();
 
     // Stop any playing video
     _introVideoController?.pause();
@@ -613,6 +633,7 @@ class _IntroScreenState extends State<IntroScreen> {
     _introTimeoutTimer?.cancel();
     _instructionTimeoutTimer?.cancel();
     _playbackMonitorTimer?.cancel();
+    _windowsFallbackTimer?.cancel();
 
     // Remove listeners
     _introVideoController?.removeListener(_checkIntroProgress);
@@ -650,29 +671,29 @@ class _IntroScreenState extends State<IntroScreen> {
             ),
 
           // LATEST PC splash on white background
-        if (_showLatestPc)
-          Positioned.fill(
-            child: AnimatedOpacity(
-              opacity: _latestPcOpacity,
-              duration: const Duration(milliseconds: 50),
-              child: Container(
-                color: Colors.white,
-                child: Center(
-                  child: SizedBox.expand(
-                    child: Image.asset(
-                      'assets/images/latest_pc.png',
-                      fit: BoxFit.contain,
+          if (_showLatestPc)
+            Positioned.fill(
+              child: AnimatedOpacity(
+                opacity: _latestPcOpacity,
+                duration: const Duration(milliseconds: 50),
+                child: Container(
+                  color: Colors.white,
+                  child: Center(
+                    child: SizedBox.expand(
+                      child: Image.asset(
+                        'assets/images/latest_pc.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        if (!_isIntroInitialized && !_hasNavigated) _buildLoadingIndicator(),
-      ],
-    ),
-  );
-}
+          if (!_isIntroInitialized && !_hasNavigated) _buildLoadingIndicator(),
+        ],
+      ),
+    );
+  }
 
   Widget _buildLoadingIndicator() {
     return const Center(
