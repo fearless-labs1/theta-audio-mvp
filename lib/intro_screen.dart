@@ -55,6 +55,7 @@ class _IntroScreenState extends State<IntroScreen> {
   Timer? _instructionTimeoutTimer;
   Timer? _playbackMonitorTimer;
   Timer? _windowsFallbackTimer;
+  Timer? _windowsKillSwitchTimer;
 
   // Track last position for stuck detection
   Duration _lastIntroPosition = Duration.zero;
@@ -67,6 +68,7 @@ class _IntroScreenState extends State<IntroScreen> {
   bool _showLatestPc = false;
   double _latestPcOpacity = 0.0;
   final bool _allowPlaybackFallbacks = true;
+  bool _showWindowsSafeMode = false;
   bool _introPlaybackStarted = false;
   bool _instructionPlaybackStarted = false;
   int _introInitRetryCount = 0;
@@ -79,17 +81,41 @@ class _IntroScreenState extends State<IntroScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🧭 IntroScreen initState');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         precacheImage(
           const AssetImage('assets/images/latest_pc.png'),
           context,
         );
-        _initializeIntroVideo();
+        if (Platform.isWindows) {
+          debugPrint('WINDOWS SAFE MODE ACTIVE');
+          _startWindowsKillSwitch();
+        } else {
+          _initializeIntroVideo();
+        }
         if (Platform.isWindows) {
           _startWindowsFallbackTimer();
         }
       }
+    });
+  }
+
+  void _startWindowsKillSwitch() {
+    setState(() {
+      _showWindowsSafeMode = true;
+    });
+    Timer(const Duration(seconds: 1), () {
+      if (!mounted) return;
+      setState(() {
+        _showWindowsSafeMode = false;
+      });
+    });
+    _windowsKillSwitchTimer?.cancel();
+    _windowsKillSwitchTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted || _hasNavigated) return;
+      debugPrint('NAVIGATING TO HOME');
+      _startFadeAndNavigate();
     });
   }
 
@@ -145,6 +171,7 @@ class _IntroScreenState extends State<IntroScreen> {
       await _introVideoController!.play();
       _introPlaybackStarted = true;
       _windowsFallbackTimer?.cancel();
+      _windowsKillSwitchTimer?.cancel();
       debugPrint('▶️ Intro video play() called...');
 
       await _ensurePlaybackStarted(_introVideoController!, 'intro');
@@ -472,6 +499,7 @@ class _IntroScreenState extends State<IntroScreen> {
     await _instructionVideoController!.play();
     _instructionPlaybackStarted = true;
     _windowsFallbackTimer?.cancel();
+    _windowsKillSwitchTimer?.cancel();
     debugPrint('▶️ Instruction video playing...');
 
     await _ensurePlaybackStarted(_instructionVideoController!, 'instruction');
@@ -599,6 +627,8 @@ class _IntroScreenState extends State<IntroScreen> {
     _instructionTimeoutTimer?.cancel();
     _playbackMonitorTimer?.cancel();
     _windowsFallbackTimer?.cancel();
+    _windowsKillSwitchTimer?.cancel();
+    _windowsKillSwitchTimer?.cancel();
 
     // Stop any playing video
     _introVideoController?.pause();
@@ -634,6 +664,7 @@ class _IntroScreenState extends State<IntroScreen> {
     _instructionTimeoutTimer?.cancel();
     _playbackMonitorTimer?.cancel();
     _windowsFallbackTimer?.cancel();
+    _windowsKillSwitchTimer?.cancel();
 
     // Remove listeners
     _introVideoController?.removeListener(_checkIntroProgress);
@@ -690,6 +721,31 @@ class _IntroScreenState extends State<IntroScreen> {
               ),
             ),
           if (!_isIntroInitialized && !_hasNavigated) _buildLoadingIndicator(),
+          if (_showWindowsSafeMode)
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 48),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Windows Safe Mode: Skipping Intro',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
