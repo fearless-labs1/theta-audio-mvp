@@ -22,9 +22,7 @@
 // - Smooth fade transitions
 
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:theta_audio_mvp/app/router.dart';
 
@@ -75,8 +73,6 @@ class _IntroScreenState extends State<IntroScreen> {
   bool _isIntroInitializing = false;
   bool _isInstructionInitializing = false;
   static const Duration _videoInitTimeout = Duration(seconds: 30);
-  File? _introTempFile;
-  File? _instructionTempFile;
 
   @override
   void initState() {
@@ -151,43 +147,10 @@ class _IntroScreenState extends State<IntroScreen> {
     } catch (e, stack) {
       debugPrint('❌ ERROR LOADING INTRO VIDEO: $e');
       debugPrint('Stack: $stack');
-      await _tryFileIntroFallback('assets/video/intro_video.mp4');
+      // Try MOV format as fallback
+      _tryFallbackIntroFormat();
     } finally {
       _isIntroInitializing = false;
-    }
-  }
-
-  Future<void> _tryFileIntroFallback(String assetPath) async {
-    try {
-      debugPrint('🔄 Trying intro fallback via file load');
-      _introVideoController?.removeListener(_checkIntroProgress);
-      _introVideoController?.dispose();
-      _introPlaybackStarted = false;
-      _introTempFile = await _loadAssetToFile(assetPath, 'intro_video.mp4');
-      _introVideoController = VideoPlayerController.file(_introTempFile!);
-
-      await _initializeController(_introVideoController!, 'intro file');
-      await _introVideoController!.setVolume(1.0);
-
-      setState(() {
-        _isIntroInitialized = true;
-      });
-
-      _introVideoController!.addListener(_checkIntroProgress);
-      await _introVideoController!.play();
-      _introPlaybackStarted = true;
-
-      await _ensurePlaybackStarted(_introVideoController!, 'intro');
-      await _waitForFirstFrame(_introVideoController!, 'intro');
-      if (_allowPlaybackFallbacks) {
-        _startIntroTimeout();
-        _startPlaybackMonitor();
-      }
-      _preloadInstructionVideo();
-    } catch (fallbackError, fallbackStack) {
-      debugPrint('❌ File fallback failed: $fallbackError');
-      debugPrint('Stack: $fallbackStack');
-      _tryFallbackIntroFormat();
     }
   }
 
@@ -484,39 +447,9 @@ class _IntroScreenState extends State<IntroScreen> {
     } catch (e, stack) {
       debugPrint('❌ ERROR LOADING INSTRUCTION VIDEO: $e');
       debugPrint('Stack: $stack');
-      await _tryInstructionFileFallback('assets/video/instruction_vid.mp4');
+      await _retryInstructionInitialization();
     } finally {
       _isInstructionInitializing = false;
-    }
-  }
-
-  Future<void> _tryInstructionFileFallback(String assetPath) async {
-    try {
-      debugPrint('🔄 Trying instruction fallback via file load');
-      _instructionVideoController?.removeListener(_checkInstructionProgress);
-      _instructionVideoController?.dispose();
-      _instructionPlaybackStarted = false;
-      _instructionTempFile =
-          await _loadAssetToFile(assetPath, 'instruction_vid.mp4');
-      _instructionVideoController = VideoPlayerController.file(
-        _instructionTempFile!,
-      );
-
-      await _initializeController(
-        _instructionVideoController!,
-        'instruction file',
-      );
-      await _instructionVideoController!.setVolume(1.0);
-
-      setState(() {
-        _isInstructionInitialized = true;
-      });
-
-      _startInstructionVideo();
-    } catch (fallbackError, fallbackStack) {
-      debugPrint('❌ Instruction file fallback failed: $fallbackError');
-      debugPrint('Stack: $fallbackStack');
-      await _retryInstructionInitialization();
     }
   }
 
@@ -600,16 +533,6 @@ class _IntroScreenState extends State<IntroScreen> {
     } on TimeoutException {
       throw TimeoutException('Video init timed out: $label');
     }
-  }
-
-  Future<File> _loadAssetToFile(String assetPath, String fileName) async {
-    final data = await rootBundle.load(assetPath);
-    final bytes = data.buffer.asUint8List();
-    final directory = Directory.systemTemp;
-    final filePath = '${directory.path}${Platform.pathSeparator}$fileName';
-    final file = File(filePath);
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
   }
 
   Future<void> _retryIntroInitialization() async {
@@ -710,8 +633,6 @@ class _IntroScreenState extends State<IntroScreen> {
     // Dispose controllers
     _introVideoController?.dispose();
     _instructionVideoController?.dispose();
-    _deleteTempFile(_introTempFile);
-    _deleteTempFile(_instructionTempFile);
 
     debugPrint('✅ Intro screen disposed');
     super.dispose();
@@ -805,14 +726,4 @@ class _IntroScreenState extends State<IntroScreen> {
     );
   }
 
-  void _deleteTempFile(File? file) {
-    if (file == null) return;
-    try {
-      if (file.existsSync()) {
-        file.deleteSync();
-      }
-    } catch (_) {
-      // Ignore cleanup errors.
-    }
-  }
 }
