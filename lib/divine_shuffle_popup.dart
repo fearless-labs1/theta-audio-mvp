@@ -25,6 +25,8 @@ import 'prayers_list.dart';
 import 'goliath_prayers_list.dart';
 import 'prayer_texts.dart';
 
+final ValueNotifier<int> refreshNotifier = ValueNotifier<int>(0);
+
 class DivineShufflePopup extends StatefulWidget {
   final bool isVisible;
   final bool isGoliathMode;
@@ -87,11 +89,11 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
 
   // Track previous session for time-based changes
   String _currentSessionType = '';
-  Timer? _sessionCheckTimer;
 
   // Auto-scroll for highlighted prayer card (green/blue box)
   final ScrollController _prayerCardScrollController = ScrollController();
   Timer? _prayerCardAutoScrollTimer;
+  late final VoidCallback _refreshListener;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // COLORS - Option 5 "Soft & Spiritual" Theme (EXACT MATCH)
@@ -116,6 +118,11 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
     super.initState();
     _initializePrayerList();
     _currentSessionType = _getSessionType();
+    _refreshListener = () {
+      if (!mounted || _currentIntroPart != 0) return;
+      _checkSessionChange();
+    };
+    refreshNotifier.addListener(_refreshListener);
 
     if (widget.isVisible) {
       _startIntroSequence();
@@ -146,7 +153,6 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   @override
   void dispose() {
     _shuffleTimer?.cancel();
-    _sessionCheckTimer?.cancel();
     _introScrollTimer?.cancel();
     _prayerCardAutoScrollTimer?.cancel();
     _ttsCompletionSubscription?.cancel();
@@ -155,6 +161,7 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
     _part3ScrollController.dispose();
     _prayerCardScrollController.dispose();
     _ttsPlayer?.dispose();
+    refreshNotifier.removeListener(_refreshListener);
     super.dispose();
   }
 
@@ -328,11 +335,6 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
     });
 
     widget.onPhase1Complete?.call();
-
-    // Start session check timer (check every 60 seconds for time-based changes)
-    _sessionCheckTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      _checkSessionChange();
-    });
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -340,7 +342,9 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   // ═══════════════════════════════════════════════════════════════════════════
 
   void _checkSessionChange() {
-    if (widget.isGoliathMode) return; // Don't check time when in Goliath mode
+    if (!mounted || widget.isGoliathMode) {
+      return; // Don't check time when in Goliath mode or after disposal
+    }
 
     final newSessionType = _getSessionType();
     if (newSessionType != _currentSessionType) {
@@ -351,10 +355,12 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   }
 
   Future<void> _handleSessionChange(String newSession) async {
+    if (!mounted) return;
     // Fade out top panel
     setState(() => _topPanelOpacity = 0.0);
     await Future.delayed(const Duration(milliseconds: 500));
 
+    if (!mounted) return;
     // Update prayer list and session
     _currentSessionType = newSession;
     _initializePrayerList();

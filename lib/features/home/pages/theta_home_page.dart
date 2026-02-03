@@ -92,10 +92,22 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   // Goliath Mode
   @override
   bool _isGoliathMode = false;
+  String _lastSessionType = '';
+  late final VoidCallback _refreshListener;
 
   @override
   void initState() {
     super.initState();
+    _refreshListener = () {
+      if (!mounted || !_isActive || _isGoliathMode) return;
+      final newSessionType = _getSessionType();
+      if (_lastSessionType != newSessionType) {
+        setState(() {
+          _lastSessionType = newSessionType;
+        });
+      }
+    };
+    refreshNotifier.addListener(_refreshListener);
     _initializeApp();
   }
 
@@ -130,9 +142,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
       // Start status auto-refresh timer (every 1 minute)
       _statusRefreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-        if (mounted && _isActive && !_isGoliathMode) {
-          setState(() {}); // Triggers UI rebuild to update time status
-        }
+        _handlePeriodicRefresh();
       });
 
       setState(() {
@@ -143,6 +153,9 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
       // Start wallpaper fade-in over 4 seconds (opacity 0→1)
       _startWallpaperFadeIn();
+
+      // Refresh status immediately instead of waiting for the first timer tick.
+      _handlePeriodicRefresh();
 
       // Divine Shuffle appears at 7 seconds (3 seconds after wallpaper fade-in completes at 4s)
       Future.delayed(const Duration(seconds: 7), () {
@@ -163,6 +176,18 @@ class _ThetaHomePageState extends State<ThetaHomePage>
         _isInitialized = false;
       });
     }
+  }
+
+  void _handlePeriodicRefresh() {
+    if (!mounted) return;
+    refreshNotifier.value++;
+  }
+
+  String _getSessionType() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 11) return 'morning';
+    if (hour >= 11 && hour < 18) return 'midday';
+    return 'evening';
   }
 
   /// NEW: Called when prayer changes (Divine Shuffle sync)
@@ -816,6 +841,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
     _dialogAudioPlayer.dispose();
     _musicPlayer?.dispose();
     _guideMeController.dispose();
+    refreshNotifier.removeListener(_refreshListener);
     super.dispose();
   }
 

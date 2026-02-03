@@ -22,6 +22,7 @@
 // - Smooth fade transitions
 
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:theta_audio_mvp/app/router.dart';
@@ -53,6 +54,8 @@ class _IntroScreenState extends State<IntroScreen> {
   Timer? _introTimeoutTimer;
   Timer? _instructionTimeoutTimer;
   Timer? _playbackMonitorTimer;
+  Timer? _windowsFallbackTimer;
+  Timer? _windowsKillSwitchTimer;
 
   // Track last position for stuck detection
   Duration _lastIntroPosition = Duration.zero;
@@ -65,24 +68,77 @@ class _IntroScreenState extends State<IntroScreen> {
   bool _showLatestPc = false;
   double _latestPcOpacity = 0.0;
   final bool _allowPlaybackFallbacks = true;
+  bool _showWindowsSafeMode = false;
+  bool _introPlaybackStarted = false;
+  bool _instructionPlaybackStarted = false;
+  int _introInitRetryCount = 0;
+  int _instructionInitRetryCount = 0;
+  static const int _maxInitRetries = 2;
+  bool _isIntroInitializing = false;
+  bool _isInstructionInitializing = false;
+  static const Duration _videoInitTimeout = Duration(seconds: 30);
 
   @override
   void initState() {
     super.initState();
+    debugPrint('🧭 IntroScreen initState');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         precacheImage(
           const AssetImage('assets/images/latest_pc.png'),
           context,
         );
-        _initializeIntroVideo();
+        if (Platform.isWindows) {
+          debugPrint('WINDOWS SAFE MODE ACTIVE');
+          _startWindowsKillSwitch();
+        } else {
+          _initializeIntroVideo();
+        }
+        if (Platform.isWindows) {
+          _startWindowsFallbackTimer();
+        }
+      }
+    });
+  }
+
+  void _startWindowsKillSwitch() {
+    setState(() {
+      _showWindowsSafeMode = true;
+    });
+    Timer(const Duration(seconds: 1), () {
+      if (!mounted) return;
+      setState(() {
+        _showWindowsSafeMode = false;
+      });
+    });
+    _windowsKillSwitchTimer?.cancel();
+    _windowsKillSwitchTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted || _hasNavigated) return;
+      debugPrint('NAVIGATING TO HOME');
+      _startFadeAndNavigate();
+    });
+  }
+
+  void _startWindowsFallbackTimer() {
+    _windowsFallbackTimer?.cancel();
+    _windowsFallbackTimer = Timer(const Duration(seconds: 5), () {
+      if (!mounted || _hasNavigated) return;
+      if (!_introPlaybackStarted && !_instructionPlaybackStarted) {
+        debugPrint(
+            '⚠️ WINDOWS FALLBACK - videos did not start, navigating to home');
+        _startFadeAndNavigate();
       }
     });
   }
 
   // Initialize intro video (Video 1) with surface-ready detection
   Future<void> _initializeIntroVideo() async {
+    if (_isIntroInitializing) return;
+    _isIntroInitializing = true;
     try {
+      _introVideoController?.removeListener(_checkIntroProgress);
+      _introVideoController?.dispose();
+      _introPlaybackStarted = false;
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('🎬 THETA INTRO SCREEN - INITIALIZING VIDEO 1 (INTRO)');
       debugPrint('═══════════════════════════════════════════════════════');
@@ -94,7 +150,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
       debugPrint('📹 Loading $videoPath from assets...');
 
-      await _introVideoController!.initialize();
+      await _initializeController(_introVideoController!, 'intro');
 
       debugPrint('✅ Intro video initialized');
       debugPrint(
@@ -113,6 +169,9 @@ class _IntroScreenState extends State<IntroScreen> {
 
       // Start playback
       await _introVideoController!.play();
+      _introPlaybackStarted = true;
+      _windowsFallbackTimer?.cancel();
+      _windowsKillSwitchTimer?.cancel();
       debugPrint('▶️ Intro video play() called...');
 
       await _ensurePlaybackStarted(_introVideoController!, 'intro');
@@ -135,6 +194,8 @@ class _IntroScreenState extends State<IntroScreen> {
       debugPrint('Stack: $stack');
       // Try MOV format as fallback
       _tryFallbackIntroFormat();
+    } finally {
+      _isIntroInitializing = false;
     }
   }
 
@@ -144,10 +205,11 @@ class _IntroScreenState extends State<IntroScreen> {
       debugPrint('🔄 Trying fallback format: intro_video.mov');
 
       _introVideoController?.dispose();
+      _introPlaybackStarted = false;
       _introVideoController =
           VideoPlayerController.asset('assets/video/intro_video.mov');
 
-      await _introVideoController!.initialize();
+      await _initializeController(_introVideoController!, 'intro fallback');
       await _introVideoController!.setVolume(1.0);
 
       setState(() {
@@ -156,6 +218,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
       _introVideoController!.addListener(_checkIntroProgress);
       await _introVideoController!.play();
+      _introPlaybackStarted = true;
 
       await _ensurePlaybackStarted(_introVideoController!, 'intro');
 
@@ -167,8 +230,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _preloadInstructionVideo();
     } catch (e) {
       debugPrint('❌ Fallback also failed: $e');
-      // Skip to instruction video
-      _switchToInstructionVideo();
+      _retryIntroInitialization();
     }
   }
 
@@ -200,31 +262,19 @@ class _IntroScreenState extends State<IntroScreen> {
         return;
       }
 
-      // Also check if video has frames ready
-      if (controller.value.isInitialized &&
-          controller.value.size.width > 0 &&
-          controller.value.size.height > 0 &&
-          isPlaying) {
-        debugPrint('✅ Video surface ready ($videoName)');
-        return;
-      }
-
-      if (attempts % 10 == 0) {
-        debugPrint(
-            '   Still waiting... attempt $attempts, isPlaying: $isPlaying, position: ${position.inMilliseconds}ms');
+      // Also check if video has frames ready (buffering indicator)
+      if (controller.value.isBuffering) {
+        debugPrint('⏳ Video buffering ($videoName)...');
       }
     }
 
-    debugPrint('⚠️ First frame wait timeout ($videoName) - proceeding anyway');
+    debugPrint(
+        '⚠️ Timeout waiting for first frame ($videoName) after 5 seconds');
   }
 
   Future<void> _ensurePlaybackStarted(
       VideoPlayerController controller, String videoName) async {
-    if (!controller.value.isInitialized) {
-      return;
-    }
-
-    for (var attempt = 1; attempt <= 3; attempt++) {
+    for (int attempt = 1; attempt <= 5; attempt++) {
       await Future.delayed(const Duration(milliseconds: 250));
       final value = controller.value;
       if (value.isPlaying ||
@@ -250,7 +300,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
     _introTimeoutTimer?.cancel();
     _introTimeoutTimer = Timer(timeoutDuration, () {
-      if (!_introCompleted && mounted) {
+      if (!_introCompleted && mounted && _introPlaybackStarted) {
         debugPrint('⚠️ INTRO VIDEO TIMEOUT - forcing switch to instruction');
         _switchToInstructionVideo();
       }
@@ -305,7 +355,9 @@ class _IntroScreenState extends State<IntroScreen> {
 
           if (_stuckFrameCount >= 6) {
             debugPrint('🔄 Video stuck for 3 seconds - forcing navigation');
-            _startFadeAndNavigate();
+            if (_instructionPlaybackStarted) {
+              _markInstructionComplete('INSTRUCTION VIDEO STUCK');
+            }
           }
         } else {
           _stuckFrameCount = 0;
@@ -324,7 +376,10 @@ class _IntroScreenState extends State<IntroScreen> {
         'assets/video/instruction_vid.mp4',
       );
 
-      await _instructionVideoController!.initialize();
+      await _initializeController(
+        _instructionVideoController!,
+        'instruction preload',
+      );
       await _instructionVideoController!.setVolume(1.0);
 
       setState(() {
@@ -400,16 +455,21 @@ class _IntroScreenState extends State<IntroScreen> {
 
   // Initialize instruction video if not pre-loaded
   Future<void> _initializeInstructionVideo() async {
+    if (_isInstructionInitializing) return;
+    _isInstructionInitializing = true;
     try {
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('🎬 INITIALIZING VIDEO 2 (INSTRUCTION)');
       debugPrint('═══════════════════════════════════════════════════════');
 
+      _instructionVideoController?.removeListener(_checkInstructionProgress);
+      _instructionVideoController?.dispose();
+      _instructionPlaybackStarted = false;
       _instructionVideoController = VideoPlayerController.asset(
         'assets/video/instruction_vid.mp4',
       );
 
-      await _instructionVideoController!.initialize();
+      await _initializeController(_instructionVideoController!, 'instruction');
       await _instructionVideoController!.setVolume(1.0);
 
       setState(() {
@@ -420,15 +480,16 @@ class _IntroScreenState extends State<IntroScreen> {
     } catch (e, stack) {
       debugPrint('❌ ERROR LOADING INSTRUCTION VIDEO: $e');
       debugPrint('Stack: $stack');
-      // Skip to main app
-      _startFadeAndNavigate();
+      await _retryInstructionInitialization();
+    } finally {
+      _isInstructionInitializing = false;
     }
   }
 
   // Start playing instruction video
   Future<void> _startInstructionVideo() async {
     if (_instructionVideoController == null) {
-      _startFadeAndNavigate();
+      await _retryInstructionInitialization();
       return;
     }
 
@@ -436,6 +497,9 @@ class _IntroScreenState extends State<IntroScreen> {
     _instructionVideoController!.addListener(_checkInstructionProgress);
 
     await _instructionVideoController!.play();
+    _instructionPlaybackStarted = true;
+    _windowsFallbackTimer?.cancel();
+    _windowsKillSwitchTimer?.cancel();
     debugPrint('▶️ Instruction video playing...');
 
     await _ensurePlaybackStarted(_instructionVideoController!, 'instruction');
@@ -460,9 +524,9 @@ class _IntroScreenState extends State<IntroScreen> {
 
     _instructionTimeoutTimer?.cancel();
     _instructionTimeoutTimer = Timer(timeoutDuration, () {
-      if (!_instructionCompleted && mounted) {
+      if (!_instructionCompleted && mounted && _instructionPlaybackStarted) {
         debugPrint('⚠️ INSTRUCTION VIDEO TIMEOUT - forcing navigation');
-        _startFadeAndNavigate();
+        _markInstructionComplete('INSTRUCTION VIDEO TIMEOUT');
       }
     });
   }
@@ -478,8 +542,7 @@ class _IntroScreenState extends State<IntroScreen> {
     // Check for completion
     if (duration.inMilliseconds > 0 &&
         position.inMilliseconds >= duration.inMilliseconds - 100) {
-      debugPrint('✅ INSTRUCTION VIDEO COMPLETE');
-      _startFadeAndNavigate();
+      _markInstructionComplete('INSTRUCTION VIDEO COMPLETE');
       return;
     }
 
@@ -487,16 +550,73 @@ class _IntroScreenState extends State<IntroScreen> {
     if (!value.isPlaying &&
         duration.inMilliseconds > 0 &&
         position.inMilliseconds > duration.inMilliseconds - 500) {
-      debugPrint('✅ INSTRUCTION VIDEO STOPPED NEAR END - treating as complete');
-      _startFadeAndNavigate();
+      _markInstructionComplete('INSTRUCTION VIDEO STOPPED NEAR END');
     }
+  }
+
+  void _markInstructionComplete(String reason) {
+    if (_instructionCompleted) return;
+    debugPrint('✅ $reason');
+    _instructionCompleted = true;
+    _startFadeAndNavigate();
+  }
+
+  Future<void> _initializeController(
+      VideoPlayerController controller, String label) async {
+    try {
+      await controller.initialize().timeout(_videoInitTimeout);
+    } on TimeoutException {
+      throw TimeoutException('Video init timed out: $label');
+    }
+  }
+
+  Future<void> _retryIntroInitialization() async {
+    if (!mounted) {
+      return;
+    }
+
+    if (_introInitRetryCount >= _maxInitRetries) {
+      debugPrint(
+          '⚠️ Intro video failed after retries - continuing to retry...');
+      _introInitRetryCount = 0;
+    } else {
+      _introInitRetryCount++;
+    }
+
+    final delay =
+        Duration(milliseconds: 750 + (_introInitRetryCount * 250));
+    debugPrint('↻ Retrying intro initialization ($_introInitRetryCount)');
+    await Future.delayed(delay);
+    if (!mounted) return;
+    await _initializeIntroVideo();
+  }
+
+  Future<void> _retryInstructionInitialization() async {
+    if (!mounted) {
+      return;
+    }
+
+    if (_instructionInitRetryCount >= _maxInitRetries) {
+      debugPrint(
+          '⚠️ Instruction video failed after retries - continuing to retry...');
+      _instructionInitRetryCount = 0;
+    } else {
+      _instructionInitRetryCount++;
+    }
+
+    final delay =
+        Duration(milliseconds: 750 + (_instructionInitRetryCount * 250));
+    debugPrint(
+        '↻ Retrying instruction initialization ($_instructionInitRetryCount)');
+    await Future.delayed(delay);
+    if (!mounted) return;
+    await _initializeInstructionVideo();
   }
 
   // Start fade to white and navigate to main app
   Future<void> _startFadeAndNavigate() async {
     if (_hasNavigated) return;
     _hasNavigated = true;
-    _instructionCompleted = true;
 
     debugPrint('═══════════════════════════════════════════════════════');
     debugPrint('🌟 STARTING FADE TRANSITION (800ms white, 4000ms navigate)');
@@ -506,6 +626,9 @@ class _IntroScreenState extends State<IntroScreen> {
     _introTimeoutTimer?.cancel();
     _instructionTimeoutTimer?.cancel();
     _playbackMonitorTimer?.cancel();
+    _windowsFallbackTimer?.cancel();
+    _windowsKillSwitchTimer?.cancel();
+    _windowsKillSwitchTimer?.cancel();
 
     // Stop any playing video
     _introVideoController?.pause();
@@ -540,6 +663,8 @@ class _IntroScreenState extends State<IntroScreen> {
     _introTimeoutTimer?.cancel();
     _instructionTimeoutTimer?.cancel();
     _playbackMonitorTimer?.cancel();
+    _windowsFallbackTimer?.cancel();
+    _windowsKillSwitchTimer?.cancel();
 
     // Remove listeners
     _introVideoController?.removeListener(_checkIntroProgress);
@@ -595,7 +720,46 @@ class _IntroScreenState extends State<IntroScreen> {
                 ),
               ),
             ),
+          if (!_isIntroInitialized && !_hasNavigated) _buildLoadingIndicator(),
+          if (_showWindowsSafeMode)
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 48),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Windows Safe Mode: Skipping Intro',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return const Center(
+      child: SizedBox(
+        width: 32,
+        height: 32,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
+        ),
       ),
     );
   }
@@ -613,17 +777,7 @@ class _IntroScreenState extends State<IntroScreen> {
       return _buildVideoPlayer(_instructionVideoController!);
     }
 
-    // Show subtle loading spinner
-    return const Center(
-      child: SizedBox(
-        width: 32,
-        height: 32,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
-        ),
-      ),
-    );
+    return const SizedBox.expand();
   }
 
   Widget _buildVideoPlayer(VideoPlayerController controller) {
@@ -640,4 +794,5 @@ class _IntroScreenState extends State<IntroScreen> {
       ),
     );
   }
+
 }
