@@ -94,6 +94,7 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   final ScrollController _prayerCardScrollController = ScrollController();
   Timer? _prayerCardAutoScrollTimer;
   late final VoidCallback _refreshListener;
+  bool _isRefreshListenerActive = false;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // COLORS - Option 5 "Soft & Spiritual" Theme (EXACT MATCH)
@@ -122,7 +123,6 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
       if (!mounted || _currentIntroPart != 0) return;
       _checkSessionChange();
     };
-    refreshNotifier.addListener(_refreshListener);
 
     if (widget.isVisible) {
       _startIntroSequence();
@@ -161,7 +161,9 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
     _part3ScrollController.dispose();
     _prayerCardScrollController.dispose();
     _ttsPlayer?.dispose();
-    refreshNotifier.removeListener(_refreshListener);
+    if (_isRefreshListenerActive) {
+      refreshNotifier.removeListener(_refreshListener);
+    }
     super.dispose();
   }
 
@@ -334,6 +336,11 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
       _contentOpacity = 1.0;
     });
 
+    if (!_isRefreshListenerActive) {
+      refreshNotifier.addListener(_refreshListener);
+      _isRefreshListenerActive = true;
+    }
+
     widget.onPhase1Complete?.call();
   }
 
@@ -342,6 +349,7 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   // ═══════════════════════════════════════════════════════════════════════════
 
   void _checkSessionChange() {
+    if (_currentIntroPart != 0) return;
     if (!mounted || widget.isGoliathMode) {
       return; // Don't check time when in Goliath mode or after disposal
     }
@@ -355,6 +363,7 @@ class DivineShufflePopupState extends State<DivineShufflePopup>
   }
 
   Future<void> _handleSessionChange(String newSession) async {
+    if (_currentIntroPart != 0) return;
     if (!mounted) return;
     // Fade out top panel
     setState(() => _topPanelOpacity = 0.0);

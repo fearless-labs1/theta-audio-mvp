@@ -65,6 +65,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
   @override
   bool _showDivineShuffle = false;
   bool _introComplete = false;
+  bool _introDelayElapsed = false;
   @override
   String? _currentPrayerPath;
   String? _currentPrayerNumber;
@@ -163,6 +164,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
           debugPrint('🔀 7-second delay complete - showing Divine Shuffle');
           setState(() {
             _showDivineShuffle = true;
+            _introDelayElapsed = true;
           });
           // Start background fade AFTER Divine Shuffle appears
           _startBackgroundFade();
@@ -180,6 +182,7 @@ class _ThetaHomePageState extends State<ThetaHomePage>
 
   void _handlePeriodicRefresh() {
     if (!mounted) return;
+    if (!_introComplete && !_introDelayElapsed) return;
     refreshNotifier.value++;
   }
 
