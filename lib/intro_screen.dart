@@ -425,23 +425,26 @@ class _IntroScreenState extends State<IntroScreen> {
             ),
 
           if (_showLatestPc)
-  Positioned.fill(
-    child: AnimatedOpacity(
-      opacity: _latestPcOpacity,
-      duration: const Duration(milliseconds: 50),
-      child: Container(
-        color: Colors.white,
-        child: Center(
-          child: SizedBox.expand(
-            child: Image.asset(
-              'assets/images/latest_pc.png',
-              fit: BoxFit.contain,
+            Positioned.fill(
+              child: AnimatedOpacity(
+                opacity: _latestPcOpacity,
+                duration: const Duration(milliseconds: 50),
+                child: Container(
+                  color: Colors.white,
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/latest_pc.png',
+                      width: 320,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
+        ],
       ),
-    ),
-  ),
+    );
+  }
 
   Widget _buildVideoContent() {
     if (_showingIntro && _isIntroInitialized && _introVideoController != null) {
