@@ -1,26 +1,3 @@
-// Theta Audio MVP - Intro Screen (ANDROID PRODUCTION - FIXED)
-//
-// VIDEO SEQUENCE:
-// 1. Play intro_video.mp4 (full duration)
-// 2. Play instruction_vid.mp4 (full duration)
-// 3. Fade to white overlay (800ms)
-// 4. Fade in LATEST PC image on white overlay
-// 5. Navigate to main app with fade transition (4000ms)
-//
-// FIXES APPLIED:
-// - Removed Chewie layer (simpler, more reliable playback)
-// - Added surface-ready detection (waits for first frame to render)
-// - Added 5-second timeout fallback if video fails to start
-// - Fixed completion detection for frozen video edge case
-// - Added isPlaying check with position monitoring
-// - Better error recovery and fallback logic
-//
-// FEATURES:
-// - No skip functionality (users must watch entire videos)
-// - Subtle spinner only during load
-// - Black background to prevent white flash
-// - Smooth fade transitions
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -34,355 +11,257 @@ class IntroScreen extends StatefulWidget {
 }
 
 class _IntroScreenState extends State<IntroScreen> {
-  // Video 1: Intro video
-  VideoPlayerController? _introVideoController;
+  VideoPlayerController? _intro;
+  VideoPlayerController? _instruction;
 
-  // Video 2: Instruction video
-  VideoPlayerController? _instructionVideoController;
-
-  // State tracking
   bool _isIntroInitialized = false;
   bool _isInstructionInitialized = false;
   bool _showingIntro = true;
   bool _showingInstruction = false;
+
   bool _hasNavigated = false;
   bool _introCompleted = false;
   bool _instructionCompleted = false;
 
-  // Timeout timers
   Timer? _introTimeoutTimer;
   Timer? _instructionTimeoutTimer;
   Timer? _playbackMonitorTimer;
 
-  // Track last position for stuck detection
   Duration _lastIntroPosition = Duration.zero;
   Duration _lastInstructionPosition = Duration.zero;
   int _stuckFrameCount = 0;
 
-  // Fade animation
   double _fadeOverlay = 0.0;
   bool _showFadeOverlay = false;
   bool _showLatestPc = false;
   double _latestPcOpacity = 0.0;
-  final bool _allowPlaybackFallbacks = true;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        precacheImage(
-          const AssetImage('assets/images/latest_pc.png'),
-          context,
-        );
-        _initializeIntroVideo();
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      // IMPORTANT: make this match your real asset path exactly
+      precacheImage(const AssetImage('assets/images/LATEST PC.png'), context);
+
+      await _initializeIntroVideo();
     });
   }
 
-  // Initialize intro video (Video 1) with surface-ready detection
   Future<void> _initializeIntroVideo() async {
     try {
       debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('🎬 THETA INTRO SCREEN - INITIALIZING VIDEO 1 (INTRO)');
+      debugPrint('🎬 INIT VIDEO 1 (INTRO)');
       debugPrint('═══════════════════════════════════════════════════════');
 
-      // Try MP4 first (recommended), fall back to MOV
-      String videoPath = 'assets/video/intro_video.mp4';
+      _intro?.removeListener(_checkIntroProgress);
+      await _intro?.dispose();
 
-      _introVideoController = VideoPlayerController.asset(videoPath);
+      _intro = VideoPlayerController.asset('assets/video/intro_video.mp4');
 
-      debugPrint('📹 Loading $videoPath from assets...');
+      await _intro!.initialize();
+      await _intro!.setVolume(1.0);
+      await _intro!.setLooping(false);
 
-      await _introVideoController!.initialize();
+      setState(() => _isIntroInitialized = true);
 
-      debugPrint('✅ Intro video initialized');
-      debugPrint(
-          '   Duration: ${_introVideoController!.value.duration.inSeconds} seconds');
-      debugPrint('   Size: ${_introVideoController!.value.size}');
+      _intro!.addListener(_checkIntroProgress);
 
-      // Set volume
-      await _introVideoController!.setVolume(1.0);
+      await _intro!.play();
+      debugPrint('▶️ intro play() called');
 
-      setState(() {
-        _isIntroInitialized = true;
-      });
+      await _waitForFirstFrame(_intro!, 'intro');
+      _startIntroTimeout();
+      _startPlaybackMonitor();
 
-      // Add completion listener BEFORE playing
-      _introVideoController!.addListener(_checkIntroProgress);
-
-      // Start playback
-      await _introVideoController!.play();
-      debugPrint('▶️ Intro video play() called...');
-
-      await _ensurePlaybackStarted(_introVideoController!, 'intro');
-
-      // Wait for first frame to actually render (surface-ready detection)
-      await _waitForFirstFrame(_introVideoController!, 'intro');
-
-      if (_allowPlaybackFallbacks) {
-        // Start timeout timer (fallback if video hangs)
-        _startIntroTimeout();
-
-        // Start playback monitor to detect stuck video
-        _startPlaybackMonitor();
-      }
-
-      // Pre-load instruction video while intro plays
-      _preloadInstructionVideo();
-    } catch (e, stack) {
-      debugPrint('❌ ERROR LOADING INTRO VIDEO: $e');
-      debugPrint('Stack: $stack');
-      // Try MOV format as fallback
-      _tryFallbackIntroFormat();
+      // Preload instruction while intro plays
+      unawaited(_preloadInstructionVideo());
+    } catch (e, st) {
+      debugPrint('❌ INTRO INIT ERROR: $e');
+      debugPrint('$st');
+      _switchToInstructionVideo(); // fallback
     }
   }
 
-  // Try loading MOV format if MP4 fails
-  Future<void> _tryFallbackIntroFormat() async {
+  Future<void> _preloadInstructionVideo() async {
     try {
-      debugPrint('🔄 Trying fallback format: intro_video.mov');
+      debugPrint('📹 Preloading instruction...');
+      _instruction?.removeListener(_checkInstructionProgress);
+      await _instruction?.dispose();
 
-      _introVideoController?.dispose();
-      _introVideoController =
-          VideoPlayerController.asset('assets/video/intro_video.mov');
+      _instruction = VideoPlayerController.asset('assets/video/instruction_vid.mp4');
+      await _instruction!.initialize();
+      await _instruction!.setVolume(1.0);
+      await _instruction!.setLooping(false);
 
-      await _introVideoController!.initialize();
-      await _introVideoController!.setVolume(1.0);
+      if (!mounted) return;
+      setState(() => _isInstructionInitialized = true);
 
-      setState(() {
-        _isIntroInitialized = true;
-      });
-
-      _introVideoController!.addListener(_checkIntroProgress);
-      await _introVideoController!.play();
-
-      await _ensurePlaybackStarted(_introVideoController!, 'intro');
-
-      await _waitForFirstFrame(_introVideoController!, 'intro');
-      if (_allowPlaybackFallbacks) {
-        _startIntroTimeout();
-        _startPlaybackMonitor();
-      }
-      _preloadInstructionVideo();
+      debugPrint('✅ Instruction preloaded');
     } catch (e) {
-      debugPrint('❌ Fallback also failed: $e');
-      // Skip to instruction video
-      _switchToInstructionVideo();
+      debugPrint('⚠️ Instruction preload failed: $e');
     }
   }
 
-  // Wait for first frame to render (surface-ready detection)
-  Future<void> _waitForFirstFrame(
-      VideoPlayerController controller, String videoName) async {
-    debugPrint('⏳ Waiting for first frame to render ($videoName)...');
+  Future<void> _initializeInstructionVideo() async {
+    try {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('🎬 INIT VIDEO 2 (INSTRUCTION)');
+      debugPrint('═══════════════════════════════════════════════════════');
 
-    int attempts = 0;
-    const maxAttempts = 50; // 5 seconds max wait
+      _instruction?.removeListener(_checkInstructionProgress);
+      await _instruction?.dispose();
 
-    while (attempts < maxAttempts) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      attempts++;
+      _instruction = VideoPlayerController.asset('assets/video/instruction_vid.mp4');
+      await _instruction!.initialize();
+      await _instruction!.setVolume(1.0);
+      await _instruction!.setLooping(false);
 
-      // Check if video is actually playing (position advancing)
-      final position = controller.value.position;
-      final isPlaying = controller.value.isPlaying;
+      if (!mounted) return;
+      setState(() => _isInstructionInitialized = true);
 
-      if (controller.value.hasError) {
-        debugPrint(
-            '❌ Video error while waiting for first frame ($videoName): ${controller.value.errorDescription}');
-        return;
-      }
-
-      if (isPlaying && position.inMilliseconds > 0) {
-        debugPrint(
-            '✅ First frame rendered ($videoName) - position: ${position.inMilliseconds}ms');
-        return;
-      }
-
-      // Also check if video has frames ready
-      if (controller.value.isInitialized &&
-          controller.value.size.width > 0 &&
-          controller.value.size.height > 0 &&
-          isPlaying) {
-        debugPrint('✅ Video surface ready ($videoName)');
-        return;
-      }
-
-      if (attempts % 10 == 0) {
-        debugPrint(
-            '   Still waiting... attempt $attempts, isPlaying: $isPlaying, position: ${position.inMilliseconds}ms');
-      }
+      await _startInstructionVideo();
+    } catch (e, st) {
+      debugPrint('❌ INSTRUCTION INIT ERROR: $e');
+      debugPrint('$st');
+      _startFadeAndNavigate();
     }
-
-    debugPrint('⚠️ First frame wait timeout ($videoName) - proceeding anyway');
   }
 
-  Future<void> _ensurePlaybackStarted(
-      VideoPlayerController controller, String videoName) async {
-    if (!controller.value.isInitialized) {
+  Future<void> _startInstructionVideo() async {
+    if (_instruction == null) {
+      _startFadeAndNavigate();
       return;
     }
 
-    for (var attempt = 1; attempt <= 3; attempt++) {
-      await Future.delayed(const Duration(milliseconds: 250));
-      final value = controller.value;
-      if (value.isPlaying ||
-          value.position.inMilliseconds > 0 ||
-          value.isBuffering) {
+    _instruction!.addListener(_checkInstructionProgress);
+
+    await _instruction!.play();
+    debugPrint('▶️ instruction play() called');
+
+    await _waitForFirstFrame(_instruction!, 'instruction');
+    _startInstructionTimeout();
+  }
+
+  Future<void> _waitForFirstFrame(VideoPlayerController c, String name) async {
+    debugPrint('⏳ Waiting for first frame ($name)...');
+    const maxAttempts = 50; // 5 seconds
+    for (int i = 1; i <= maxAttempts; i++) {
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (c.value.hasError) {
+        debugPrint('❌ $name error: ${c.value.errorDescription}');
         return;
       }
 
-      debugPrint(
-          '↻ $videoName playback not started (attempt $attempt) - retrying');
-      await controller.seekTo(Duration.zero);
-      await controller.play();
+      final pos = c.value.position;
+      final isPlaying = c.value.isPlaying;
+
+      if (isPlaying && pos.inMilliseconds > 0) {
+        debugPrint('✅ First frame ($name) @ ${pos.inMilliseconds}ms');
+        return;
+      }
+
+      if (i % 10 == 0) {
+        debugPrint('   ...still waiting ($name) attempt $i, playing=$isPlaying, pos=${pos.inMilliseconds}ms');
+      }
     }
+    debugPrint('⚠️ First frame timeout ($name) — continuing anyway');
   }
 
-  // Start timeout timer for intro video
   void _startIntroTimeout() {
-    final duration =
-        _introVideoController?.value.duration ?? const Duration(seconds: 30);
-    final timeoutDuration = duration + const Duration(seconds: 5);
-
-    debugPrint('⏱️ Intro timeout set for ${timeoutDuration.inSeconds} seconds');
+    final duration = _intro?.value.duration ?? const Duration(seconds: 30);
+    final timeout = duration + const Duration(seconds: 5);
 
     _introTimeoutTimer?.cancel();
-    _introTimeoutTimer = Timer(timeoutDuration, () {
+    _introTimeoutTimer = Timer(timeout, () {
       if (!_introCompleted && mounted) {
-        debugPrint('⚠️ INTRO VIDEO TIMEOUT - forcing switch to instruction');
+        debugPrint('⚠️ INTRO TIMEOUT — switching to instruction');
         _switchToInstructionVideo();
       }
     });
   }
 
-  // Start playback monitor to detect stuck video
+  void _startInstructionTimeout() {
+    final duration = _instruction?.value.duration ?? const Duration(seconds: 30);
+    final timeout = duration + const Duration(seconds: 5);
+
+    _instructionTimeoutTimer?.cancel();
+    _instructionTimeoutTimer = Timer(timeout, () {
+      if (!_instructionCompleted && mounted) {
+        debugPrint('⚠️ INSTRUCTION TIMEOUT — navigating');
+        _startFadeAndNavigate();
+      }
+    });
+  }
+
   void _startPlaybackMonitor() {
     _playbackMonitorTimer?.cancel();
-    _playbackMonitorTimer =
-        Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
+    _playbackMonitorTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted) return;
 
-      if (_showingIntro && _introVideoController != null && !_introCompleted) {
-        final currentPos = _introVideoController!.value.position;
-        final isPlaying = _introVideoController!.value.isPlaying;
+      if (_showingIntro && _intro != null && !_introCompleted) {
+        final pos = _intro!.value.position;
+        final isPlaying = _intro!.value.isPlaying;
 
-        // Check if position is stuck while supposedly playing
-        if (isPlaying &&
-            currentPos == _lastIntroPosition &&
-            currentPos.inMilliseconds > 0) {
+        if (isPlaying && pos == _lastIntroPosition && pos.inMilliseconds > 0) {
           _stuckFrameCount++;
-          debugPrint(
-              '⚠️ Intro video may be stuck - count: $_stuckFrameCount, pos: ${currentPos.inMilliseconds}ms');
-
           if (_stuckFrameCount >= 6) {
-            // 3 seconds of no progress
-            debugPrint('🔄 Video stuck for 3 seconds - forcing skip');
+            debugPrint('🔄 Intro stuck 3s — switching');
             _switchToInstructionVideo();
           }
         } else {
           _stuckFrameCount = 0;
         }
-        _lastIntroPosition = currentPos;
+        _lastIntroPosition = pos;
       }
 
-      if (_showingInstruction &&
-          _instructionVideoController != null &&
-          !_instructionCompleted) {
-        final currentPos = _instructionVideoController!.value.position;
-        final isPlaying = _instructionVideoController!.value.isPlaying;
+      if (_showingInstruction && _instruction != null && !_instructionCompleted) {
+        final pos = _instruction!.value.position;
+        final isPlaying = _instruction!.value.isPlaying;
 
-        if (isPlaying &&
-            currentPos == _lastInstructionPosition &&
-            currentPos.inMilliseconds > 0) {
+        if (isPlaying && pos == _lastInstructionPosition && pos.inMilliseconds > 0) {
           _stuckFrameCount++;
-          debugPrint(
-              '⚠️ Instruction video may be stuck - count: $_stuckFrameCount');
-
           if (_stuckFrameCount >= 6) {
-            debugPrint('🔄 Video stuck for 3 seconds - forcing navigation');
+            debugPrint('🔄 Instruction stuck 3s — navigating');
             _startFadeAndNavigate();
           }
         } else {
           _stuckFrameCount = 0;
         }
-        _lastInstructionPosition = currentPos;
+        _lastInstructionPosition = pos;
       }
     });
   }
 
-  // Pre-load instruction video while intro plays
-  Future<void> _preloadInstructionVideo() async {
-    try {
-      debugPrint('📹 Pre-loading instruction_vid.mp4...');
-
-      _instructionVideoController = VideoPlayerController.asset(
-        'assets/video/instruction_vid.mp4',
-      );
-
-      await _instructionVideoController!.initialize();
-      await _instructionVideoController!.setVolume(1.0);
-
-      setState(() {
-        _isInstructionInitialized = true;
-      });
-
-      debugPrint('✅ Instruction video pre-loaded');
-      debugPrint(
-          '   Duration: ${_instructionVideoController!.value.duration.inSeconds} seconds');
-    } catch (e) {
-      debugPrint('⚠️ Could not pre-load instruction video: $e');
-    }
-  }
-
-  // Check intro video progress
   void _checkIntroProgress() {
-    if (_introVideoController == null || _introCompleted) return;
+    if (_intro == null || _introCompleted) return;
 
-    final value = _introVideoController!.value;
-    final position = value.position;
-    final duration = value.duration;
+    final v = _intro!.value;
+    final pos = v.position;
+    final dur = v.duration;
 
-    // Check for completion: position at or past duration
-    if (duration.inMilliseconds > 0 &&
-        position.inMilliseconds >= duration.inMilliseconds - 100) {
-      // 100ms tolerance
-      debugPrint(
-          '✅ INTRO VIDEO COMPLETE (position: ${position.inMilliseconds}ms, duration: ${duration.inMilliseconds}ms)');
+    if (dur.inMilliseconds > 0 && pos.inMilliseconds >= dur.inMilliseconds - 100) {
+      debugPrint('✅ INTRO COMPLETE');
       _switchToInstructionVideo();
       return;
     }
 
-    // Also check if video stopped playing near the end
-    if (!value.isPlaying &&
-        duration.inMilliseconds > 0 &&
-        position.inMilliseconds > duration.inMilliseconds - 500) {
-      debugPrint('✅ INTRO VIDEO STOPPED NEAR END - treating as complete');
+    if (!v.isPlaying && dur.inMilliseconds > 0 && pos.inMilliseconds > dur.inMilliseconds - 500) {
+      debugPrint('✅ INTRO STOPPED NEAR END — treating complete');
       _switchToInstructionVideo();
     }
   }
 
-  // Switch from intro to instruction video
   void _switchToInstructionVideo() {
     if (_introCompleted) return;
     _introCompleted = true;
 
-    debugPrint('═══════════════════════════════════════════════════════');
-    debugPrint('🎬 SWITCHING TO INSTRUCTION VIDEO');
-    debugPrint('═══════════════════════════════════════════════════════');
-
-    // Cancel intro timeout
     _introTimeoutTimer?.cancel();
+    _intro?.removeListener(_checkIntroProgress);
+    _intro?.pause();
 
-    // Clean up intro video
-    _introVideoController?.removeListener(_checkIntroProgress);
-    _introVideoController?.pause();
-
-    // Reset stuck counter
     _stuckFrameCount = 0;
 
     setState(() {
@@ -390,166 +269,80 @@ class _IntroScreenState extends State<IntroScreen> {
       _showingInstruction = true;
     });
 
-    // Start instruction video
-    if (_isInstructionInitialized && _instructionVideoController != null) {
-      _startInstructionVideo();
+    if (_isInstructionInitialized && _instruction != null) {
+      unawaited(_startInstructionVideo());
     } else {
-      _initializeInstructionVideo();
+      unawaited(_initializeInstructionVideo());
     }
   }
 
-  // Initialize instruction video if not pre-loaded
-  Future<void> _initializeInstructionVideo() async {
-    try {
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('🎬 INITIALIZING VIDEO 2 (INSTRUCTION)');
-      debugPrint('═══════════════════════════════════════════════════════');
-
-      _instructionVideoController = VideoPlayerController.asset(
-        'assets/video/instruction_vid.mp4',
-      );
-
-      await _instructionVideoController!.initialize();
-      await _instructionVideoController!.setVolume(1.0);
-
-      setState(() {
-        _isInstructionInitialized = true;
-      });
-
-      _startInstructionVideo();
-    } catch (e, stack) {
-      debugPrint('❌ ERROR LOADING INSTRUCTION VIDEO: $e');
-      debugPrint('Stack: $stack');
-      // Skip to main app
-      _startFadeAndNavigate();
-    }
-  }
-
-  // Start playing instruction video
-  Future<void> _startInstructionVideo() async {
-    if (_instructionVideoController == null) {
-      _startFadeAndNavigate();
-      return;
-    }
-
-    // Add listener before playing
-    _instructionVideoController!.addListener(_checkInstructionProgress);
-
-    await _instructionVideoController!.play();
-    debugPrint('▶️ Instruction video playing...');
-
-    await _ensurePlaybackStarted(_instructionVideoController!, 'instruction');
-
-    // Wait for first frame
-    await _waitForFirstFrame(_instructionVideoController!, 'instruction');
-
-    // Start timeout timer
-    if (_allowPlaybackFallbacks) {
-      _startInstructionTimeout();
-    }
-  }
-
-  // Start timeout timer for instruction video
-  void _startInstructionTimeout() {
-    final duration = _instructionVideoController?.value.duration ??
-        const Duration(seconds: 30);
-    final timeoutDuration = duration + const Duration(seconds: 5);
-
-    debugPrint(
-        '⏱️ Instruction timeout set for ${timeoutDuration.inSeconds} seconds');
-
-    _instructionTimeoutTimer?.cancel();
-    _instructionTimeoutTimer = Timer(timeoutDuration, () {
-      if (!_instructionCompleted && mounted) {
-        debugPrint('⚠️ INSTRUCTION VIDEO TIMEOUT - forcing navigation');
-        _startFadeAndNavigate();
-      }
-    });
-  }
-
-  // Check instruction video progress
   void _checkInstructionProgress() {
-    if (_instructionVideoController == null || _instructionCompleted) return;
+    if (_instruction == null || _instructionCompleted) return;
 
-    final value = _instructionVideoController!.value;
-    final position = value.position;
-    final duration = value.duration;
+    final v = _instruction!.value;
+    final pos = v.position;
+    final dur = v.duration;
 
-    // Check for completion
-    if (duration.inMilliseconds > 0 &&
-        position.inMilliseconds >= duration.inMilliseconds - 100) {
-      debugPrint('✅ INSTRUCTION VIDEO COMPLETE');
+    if (dur.inMilliseconds > 0 && pos.inMilliseconds >= dur.inMilliseconds - 100) {
+      debugPrint('✅ INSTRUCTION COMPLETE');
       _startFadeAndNavigate();
       return;
     }
 
-    // Check if stopped near end
-    if (!value.isPlaying &&
-        duration.inMilliseconds > 0 &&
-        position.inMilliseconds > duration.inMilliseconds - 500) {
-      debugPrint('✅ INSTRUCTION VIDEO STOPPED NEAR END - treating as complete');
+    if (!v.isPlaying && dur.inMilliseconds > 0 && pos.inMilliseconds > dur.inMilliseconds - 500) {
+      debugPrint('✅ INSTRUCTION STOPPED NEAR END — treating complete');
       _startFadeAndNavigate();
     }
   }
 
-  // Start fade to white and navigate to main app
   Future<void> _startFadeAndNavigate() async {
     if (_hasNavigated) return;
     _hasNavigated = true;
     _instructionCompleted = true;
 
-    debugPrint('═══════════════════════════════════════════════════════');
-    debugPrint('🌟 STARTING FADE TRANSITION (800ms white, 4000ms navigate)');
-    debugPrint('═══════════════════════════════════════════════════════');
-
-    // Cancel all timers
     _introTimeoutTimer?.cancel();
     _instructionTimeoutTimer?.cancel();
     _playbackMonitorTimer?.cancel();
 
-    // Stop any playing video
-    _introVideoController?.pause();
-    _instructionVideoController?.pause();
+    _intro?.pause();
+    _instruction?.pause();
 
-    // Show white overlay and LATEST PC splash immediately
-    if (mounted) {
-      setState(() {
-        _showFadeOverlay = true;
-        _fadeOverlay = 1.0;
-        _showLatestPc = true;
-        _latestPcOpacity = 1.0;
-      });
+    setState(() => _showFadeOverlay = true);
 
-      // Briefly hold the splash before navigating
-      await Future.delayed(const Duration(milliseconds: 1200));
+    // Fade to white (800ms)
+    for (int i = 0; i <= 16; i++) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      if (!mounted) return;
+      setState(() => _fadeOverlay = i / 16.0);
     }
 
-    // Navigate to main app with fade transition (4000ms)
-    if (mounted) {
-      Navigator.pushReplacement(context, AppRouter.fadeToHomeReplacement());
+    // Show splash
+    if (!mounted) return;
+    setState(() => _showLatestPc = true);
+
+    for (int i = 0; i <= 16; i++) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      if (!mounted) return;
+      setState(() => _latestPcOpacity = i / 16.0);
     }
 
-    debugPrint('✅ Navigation to main app initiated');
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (!mounted) return;
+    Navigator.pushReplacement(context, AppRouter.fadeToHomeReplacement());
   }
 
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing intro screen resources...');
-
-    // Cancel all timers
     _introTimeoutTimer?.cancel();
     _instructionTimeoutTimer?.cancel();
     _playbackMonitorTimer?.cancel();
 
-    // Remove listeners
-    _introVideoController?.removeListener(_checkIntroProgress);
-    _instructionVideoController?.removeListener(_checkInstructionProgress);
+    _intro?.removeListener(_checkIntroProgress);
+    _instruction?.removeListener(_checkInstructionProgress);
 
-    // Dispose controllers
-    _introVideoController?.dispose();
-    _instructionVideoController?.dispose();
-
-    debugPrint('✅ Intro screen disposed');
+    _intro?.dispose();
+    _instruction?.dispose();
     super.dispose();
   }
 
@@ -559,24 +352,17 @@ class _IntroScreenState extends State<IntroScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Video content (full screen)
-          Positioned.fill(
-            child: _buildVideoContent(),
-          ),
+          Positioned.fill(child: _buildVideoContent()),
 
-          // Fade overlay (white)
           if (_showFadeOverlay)
             Positioned.fill(
               child: AnimatedOpacity(
                 opacity: _fadeOverlay,
                 duration: const Duration(milliseconds: 50),
-                child: Container(
-                  color: Colors.white,
-                ),
+                child: Container(color: Colors.white),
               ),
             ),
 
-          // LATEST PC splash on white background
           if (_showLatestPc)
             Positioned.fill(
               child: AnimatedOpacity(
@@ -585,11 +371,10 @@ class _IntroScreenState extends State<IntroScreen> {
                 child: Container(
                   color: Colors.white,
                   child: Center(
-                    child: SizedBox.expand(
-                      child: Image.asset(
-                        'assets/images/latest_pc.png',
-                        fit: BoxFit.contain,
-                      ),
+                    child: Image.asset(
+                      'assets/images/LATEST PC.png',
+                      width: 320,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -601,19 +386,40 @@ class _IntroScreenState extends State<IntroScreen> {
   }
 
   Widget _buildVideoContent() {
-    // Show intro video
-    if (_showingIntro && _isIntroInitialized && _introVideoController != null) {
-      return _buildVideoPlayer(_introVideoController!);
+    if (_showingIntro && _isIntroInitialized && _intro != null) {
+      final size = _intro!.value.size;
+      return ColoredBox(
+        color: Colors.black,
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: VideoPlayer(_intro!),
+            ),
+          ),
+        ),
+      );
     }
 
-    // Show instruction video
-    if (_showingInstruction &&
-        _isInstructionInitialized &&
-        _instructionVideoController != null) {
-      return _buildVideoPlayer(_instructionVideoController!);
+    if (_showingInstruction && _isInstructionInitialized && _instruction != null) {
+      final size = _instruction!.value.size;
+      return ColoredBox(
+        color: Colors.black,
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: VideoPlayer(_instruction!),
+            ),
+          ),
+        ),
+      );
     }
 
-    // Show subtle loading spinner
     return const Center(
       child: SizedBox(
         width: 32,
@@ -621,21 +427,6 @@ class _IntroScreenState extends State<IntroScreen> {
         child: CircularProgressIndicator(
           strokeWidth: 2,
           valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVideoPlayer(VideoPlayerController controller) {
-    final aspectRatio = controller.value.aspectRatio;
-    final safeAspectRatio = aspectRatio > 0 ? aspectRatio : 16 / 9;
-
-    return ColoredBox(
-      color: Colors.black,
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: safeAspectRatio,
-          child: VideoPlayer(controller),
         ),
       ),
     );
