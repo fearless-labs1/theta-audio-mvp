@@ -432,6 +432,7 @@ class _IntroScreenState extends State<IntroScreen> {
                 child: Container(
                   color: Colors.white,
                   child: Center(
+                   child: SizedBox.expand(
                     child: Image.asset(
                       'assets/images/latest_pc.png',
                       width: 320,
