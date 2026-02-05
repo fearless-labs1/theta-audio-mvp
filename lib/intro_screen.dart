@@ -88,12 +88,7 @@ class _IntroScreenState extends State<IntroScreen> {
           const AssetImage('assets/images/latest_pc.png'),
           context,
         );
-        if (Platform.isWindows) {
-          debugPrint('WINDOWS SAFE MODE ACTIVE');
-          _startWindowsKillSwitch();
-        } else {
-          _initializeIntroVideo();
-        }
+        _initializeIntroVideo();
         if (Platform.isWindows) {
           _startWindowsFallbackTimer();
         }
@@ -121,12 +116,13 @@ class _IntroScreenState extends State<IntroScreen> {
 
   void _startWindowsFallbackTimer() {
     _windowsFallbackTimer?.cancel();
-    _windowsFallbackTimer = Timer(const Duration(seconds: 5), () {
+    _windowsFallbackTimer = Timer(const Duration(seconds: 4), () {
       if (!mounted || _hasNavigated) return;
       if (!_introPlaybackStarted && !_instructionPlaybackStarted) {
+        debugPrint('WINDOWS SAFE MODE ACTIVE');
         debugPrint(
-            '⚠️ WINDOWS FALLBACK - videos did not start, navigating to home');
-        _startFadeAndNavigate();
+            '⚠️ WINDOWS FALLBACK - videos did not start, enabling safe mode');
+        _startWindowsKillSwitch();
       }
     });
   }
