@@ -713,7 +713,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     child: SizedBox.expand(
                       child: Image.asset(
                         'assets/images/latest_pc.png',
-                        fit: BoxFit.contain,
+                        fit: Platform.isWindows ? BoxFit.cover : BoxFit.contain,
                       ),
                     ),
                   ),
