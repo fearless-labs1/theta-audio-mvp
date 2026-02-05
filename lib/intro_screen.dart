@@ -76,7 +76,7 @@ class _IntroScreenState extends State<IntroScreen> {
   static const int _maxInitRetries = 2;
   bool _isIntroInitializing = false;
   bool _isInstructionInitializing = false;
-  static const Duration _videoInitTimeout = Duration(seconds: 30);
+  static const Duration _videoInitTimeout = Duration(seconds: 6);
 
   @override
   void initState() {
@@ -116,14 +116,33 @@ class _IntroScreenState extends State<IntroScreen> {
 
   void _startWindowsFallbackTimer() {
     _windowsFallbackTimer?.cancel();
-    _windowsFallbackTimer = Timer(const Duration(seconds: 4), () {
-      if (!mounted || _hasNavigated) return;
-      if (!_introPlaybackStarted && !_instructionPlaybackStarted) {
-        debugPrint('WINDOWS SAFE MODE ACTIVE');
-        debugPrint(
-            '⚠️ WINDOWS FALLBACK - videos did not start, enabling safe mode');
-        _startWindowsKillSwitch();
+    final startedAt = DateTime.now();
+    _windowsFallbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _hasNavigated) {
+        timer.cancel();
+        return;
       }
+      if (_introPlaybackStarted || _instructionPlaybackStarted) {
+        timer.cancel();
+        return;
+      }
+
+      final elapsed = DateTime.now().difference(startedAt);
+      if (elapsed < const Duration(seconds: 6)) {
+        return;
+      }
+
+      if (_isIntroInitializing || _isInstructionInitializing) {
+        debugPrint(
+            '⏳ WINDOWS FALLBACK WAIT - intro still initializing (${elapsed.inSeconds}s)');
+        return;
+      }
+
+      debugPrint('WINDOWS SAFE MODE ACTIVE');
+      debugPrint(
+          '⚠️ WINDOWS FALLBACK - videos did not start, enabling safe mode');
+      timer.cancel();
+      _startWindowsKillSwitch();
     });
   }
 
