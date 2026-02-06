@@ -26,12 +26,18 @@ class _IntroScreenState extends State<IntroScreen> {
   bool _instructionCompleted = false;
   bool _hasNavigated = false;
 
+  bool _introPlaybackStarted = false;
+  bool _instructionPlaybackStarted = false;
+
   Timer? _introTimeout;
   Timer? _instructionTimeout;
   Timer? _monitorTimer;
+  Timer? _debugTimer;
 
   Duration _lastPos = Duration.zero;
   int _stuckCount = 0;
+  int _playRetryCount = 0;
+  VideoPlayerController? _lastMonitoredController;
 
   // Fade + splash
   bool _showFade = false;
@@ -42,6 +48,8 @@ class _IntroScreenState extends State<IntroScreen> {
 
   // Windows “if nothing starts, don’t hang forever”
   Timer? _windowsStartGuard;
+
+  String _debugOverlayText = '';
 
   @override
   void initState() {
@@ -55,7 +63,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
       // Guard: if Windows video playback never starts, force continue.
       if (Platform.isWindows) {
-        _windowsStartGuard = Timer(const Duration(seconds: 8), () {
+        _windowsStartGuard = Timer(const Duration(seconds: 15), () {
           if (!mounted || _hasNavigated) return;
           if (!_introCompleted && !_instructionCompleted) {
             debugPrint('⚠️ Windows start guard triggered — skipping videos');
@@ -66,6 +74,50 @@ class _IntroScreenState extends State<IntroScreen> {
 
       await _initAndPlayIntro();
     });
+
+    _startDebugOverlayTimer();
+  }
+
+  void _startDebugOverlayTimer() {
+    _debugTimer?.cancel();
+    _debugTimer = Timer.periodic(const Duration(milliseconds: 250), (_) {
+      if (!mounted) return;
+      final controller =
+          _showingIntro ? _intro : (_showingInstruction ? _instruction : null);
+      if (controller == null) {
+        setState(() {
+          _debugOverlayText = _buildDebugOverlayText(null);
+        });
+        return;
+      }
+      setState(() {
+        _debugOverlayText = _buildDebugOverlayText(controller);
+      });
+    });
+  }
+
+  String _buildDebugOverlayText(VideoPlayerController? controller) {
+    final buffer = StringBuffer()
+      ..writeln('platform: ${Platform.operatingSystem} (windows: ${Platform.isWindows})')
+      ..writeln('intro asset: assets/video/intro_video.mp4')
+      ..writeln('instruction asset: assets/video/instruction_vid.mp4');
+
+    if (controller == null) {
+      buffer.writeln('controller: null');
+      return buffer.toString();
+    }
+
+    final value = controller.value;
+    buffer
+      ..writeln('isInitialized: ${value.isInitialized}')
+      ..writeln('duration: ${value.duration}')
+      ..writeln('size: ${value.size}')
+      ..writeln('hasError: ${value.hasError}')
+      ..writeln('errorDescription: ${value.errorDescription}')
+      ..writeln('isPlaying: ${value.isPlaying}')
+      ..writeln('position: ${value.position}');
+
+    return buffer.toString();
   }
 
   Future<void> _initAndPlayIntro() async {
@@ -77,7 +129,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _intro = VideoPlayerController.asset('assets/video/intro_video.mp4');
 
       // IMPORTANT: initialize first, THEN set volume/looping, THEN play.
-      await _intro!.initialize().timeout(const Duration(seconds: 8));
+      await _intro!.initialize();
       await _intro!.setVolume(1.0);
       await _intro!.setLooping(false);
 
@@ -90,6 +142,8 @@ class _IntroScreenState extends State<IntroScreen> {
       unawaited(_preloadInstruction());
 
       await _intro!.play();
+      _introPlaybackStarted = true;
+      _windowsStartGuard?.cancel();
       debugPrint('▶️ INTRO play() called');
 
       _startIntroTimeout();
@@ -112,7 +166,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _instruction =
           VideoPlayerController.asset('assets/video/instruction_vid.mp4');
 
-      await _instruction!.initialize().timeout(const Duration(seconds: 8));
+      await _instruction!.initialize();
       await _instruction!.setVolume(1.0);
       await _instruction!.setLooping(false);
 
@@ -147,6 +201,8 @@ class _IntroScreenState extends State<IntroScreen> {
 
       await _instruction!.seekTo(Duration.zero);
       await _instruction!.play();
+      _instructionPlaybackStarted = true;
+      _windowsStartGuard?.cancel();
       debugPrint('▶️ INSTRUCTION play() called');
 
       _startInstructionTimeout();
@@ -165,6 +221,10 @@ class _IntroScreenState extends State<IntroScreen> {
     final pos = v.position;
     final dur = v.duration;
 
+    if (!_introPlaybackStarted && v.isPlaying && pos > Duration.zero) {
+      _introPlaybackStarted = true;
+    }
+
     // Treat “near end” as complete
     if (dur.inMilliseconds > 0 &&
         pos.inMilliseconds >= dur.inMilliseconds - 120) {
@@ -181,6 +241,10 @@ class _IntroScreenState extends State<IntroScreen> {
     final pos = v.position;
     final dur = v.duration;
 
+    if (!_instructionPlaybackStarted && v.isPlaying && pos > Duration.zero) {
+      _instructionPlaybackStarted = true;
+    }
+
     if (dur.inMilliseconds > 0 &&
         pos.inMilliseconds >= dur.inMilliseconds - 120) {
       debugPrint('✅ INSTRUCTION COMPLETE');
@@ -194,6 +258,7 @@ class _IntroScreenState extends State<IntroScreen> {
     _introCompleted = true;
 
     _introTimeout?.cancel();
+    _introPlaybackStarted = false;
 
     _intro?.removeListener(_onIntroProgress);
     _intro?.pause();
@@ -249,8 +314,18 @@ class _IntroScreenState extends State<IntroScreen> {
 
       if (controller == null || !controller.value.isInitialized) return;
 
+      if (!identical(controller, _lastMonitoredController)) {
+        _lastMonitoredController = controller;
+        _playRetryCount = 0;
+      }
+
       final v = controller.value;
       final pos = v.position;
+
+      if (!v.isPlaying && pos == Duration.zero && _playRetryCount < 4) {
+        _playRetryCount++;
+        unawaited(controller.play());
+      }
 
       // If it reports playing but position never advances, assume stuck.
       if (v.isPlaying && pos == _lastPos && pos.inMilliseconds > 0) {
@@ -281,9 +356,15 @@ class _IntroScreenState extends State<IntroScreen> {
     _introTimeout?.cancel();
     _instructionTimeout?.cancel();
     _monitorTimer?.cancel();
+    _debugTimer?.cancel();
 
     _intro?.pause();
     _instruction?.pause();
+
+    _introPlaybackStarted = false;
+    _instructionPlaybackStarted = false;
+    _playRetryCount = 0;
+    _lastMonitoredController = null;
 
     if (!mounted) return;
     setState(() {
@@ -322,8 +403,13 @@ class _IntroScreenState extends State<IntroScreen> {
       _intro?.removeListener(_onIntroProgress);
       await _intro?.dispose();
     } catch (_) {}
+    if (identical(_lastMonitoredController, _intro)) {
+      _lastMonitoredController = null;
+    }
     _intro = null;
     _introInitialized = false;
+    _introPlaybackStarted = false;
+    _playRetryCount = 0;
   }
 
   Future<void> _disposeInstruction() async {
@@ -331,8 +417,13 @@ class _IntroScreenState extends State<IntroScreen> {
       _instruction?.removeListener(_onInstructionProgress);
       await _instruction?.dispose();
     } catch (_) {}
+    if (identical(_lastMonitoredController, _instruction)) {
+      _lastMonitoredController = null;
+    }
     _instruction = null;
     _instructionInitialized = false;
+    _instructionPlaybackStarted = false;
+    _playRetryCount = 0;
   }
 
   @override
@@ -341,6 +432,7 @@ class _IntroScreenState extends State<IntroScreen> {
     _introTimeout?.cancel();
     _instructionTimeout?.cancel();
     _monitorTimer?.cancel();
+    _debugTimer?.cancel();
 
     _intro?.removeListener(_onIntroProgress);
     _instruction?.removeListener(_onInstructionProgress);
@@ -399,6 +491,26 @@ class _IntroScreenState extends State<IntroScreen> {
                 ),
               ),
             ),
+
+          Positioned(
+            top: 8,
+            left: 8,
+            right: 8,
+            child: IgnorePointer(
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                color: Colors.black54,
+                child: Text(
+                  _debugOverlayText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
