@@ -37,7 +37,7 @@ class _WindowControlsOverlayState extends State<WindowControlsOverlay> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
-            color: _hovering ? Colors.black : Colors.transparent,
+            color: Colors.transparent,
             child: SizedBox(
               width: 132,
               height: 40,
@@ -52,14 +52,17 @@ class _WindowControlsOverlayState extends State<WindowControlsOverlay> {
                     children: [
                       _WindowControlButton(
                         icon: Icons.remove,
+                        color: const Color(0xFF7EC8FF),
                         onPressed: () => _invokeControl('minimize'),
                       ),
                       _WindowControlButton(
                         icon: Icons.crop_square,
+                        color: const Color(0xFF00D46A),
                         onPressed: () => _invokeControl('toggleMaximize'),
                       ),
                       _WindowControlButton(
                         icon: Icons.close,
+                        color: const Color(0xFFFF3B30),
                         onPressed: () => _invokeControl('close'),
                       ),
                     ],
@@ -77,17 +80,19 @@ class _WindowControlsOverlayState extends State<WindowControlsOverlay> {
 class _WindowControlButton extends StatelessWidget {
   const _WindowControlButton({
     required this.icon,
+    required this.color,
     required this.onPressed,
   });
 
   final IconData icon;
+  final Color color;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon, color: Colors.white, size: 18),
+      icon: Icon(icon, color: color, size: 18),
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints.tightFor(width: 44, height: 40),
       splashRadius: 18,
