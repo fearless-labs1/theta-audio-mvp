@@ -445,7 +445,6 @@ class _IntroScreenState extends State<IntroScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const bool showVideoDiagnostics = false;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -489,27 +488,6 @@ class _IntroScreenState extends State<IntroScreen> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
-                ),
-              ),
-            ),
-
-          if (showVideoDiagnostics)
-            Positioned(
-              top: 8,
-              left: 8,
-              right: 8,
-              child: IgnorePointer(
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.black54,
-                  child: Text(
-                    _debugOverlayText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      height: 1.2,
-                    ),
-                  ),
                 ),
               ),
             ),
