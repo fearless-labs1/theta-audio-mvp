@@ -32,7 +32,6 @@ class _IntroScreenState extends State<IntroScreen> {
   Timer? _introTimeout;
   Timer? _instructionTimeout;
   Timer? _monitorTimer;
-  Timer? _debugTimer;
 
   Duration _lastPos = Duration.zero;
   int _stuckCount = 0;
@@ -48,8 +47,6 @@ class _IntroScreenState extends State<IntroScreen> {
 
   // Windows “if nothing starts, don’t hang forever”
   Timer? _windowsStartGuard;
-
-  String _debugOverlayText = '';
 
   @override
   void initState() {
@@ -75,49 +72,6 @@ class _IntroScreenState extends State<IntroScreen> {
       await _initAndPlayIntro();
     });
 
-    _startDebugOverlayTimer();
-  }
-
-  void _startDebugOverlayTimer() {
-    _debugTimer?.cancel();
-    _debugTimer = Timer.periodic(const Duration(milliseconds: 250), (_) {
-      if (!mounted) return;
-      final controller =
-          _showingIntro ? _intro : (_showingInstruction ? _instruction : null);
-      if (controller == null) {
-        setState(() {
-          _debugOverlayText = _buildDebugOverlayText(null);
-        });
-        return;
-      }
-      setState(() {
-        _debugOverlayText = _buildDebugOverlayText(controller);
-      });
-    });
-  }
-
-  String _buildDebugOverlayText(VideoPlayerController? controller) {
-    final buffer = StringBuffer()
-      ..writeln('platform: ${Platform.operatingSystem} (windows: ${Platform.isWindows})')
-      ..writeln('intro asset: assets/video/intro_video.mp4')
-      ..writeln('instruction asset: assets/video/instruction_vid.mp4');
-
-    if (controller == null) {
-      buffer.writeln('controller: null');
-      return buffer.toString();
-    }
-
-    final value = controller.value;
-    buffer
-      ..writeln('isInitialized: ${value.isInitialized}')
-      ..writeln('duration: ${value.duration}')
-      ..writeln('size: ${value.size}')
-      ..writeln('hasError: ${value.hasError}')
-      ..writeln('errorDescription: ${value.errorDescription}')
-      ..writeln('isPlaying: ${value.isPlaying}')
-      ..writeln('position: ${value.position}');
-
-    return buffer.toString();
   }
 
   Future<void> _initAndPlayIntro() async {
@@ -356,7 +310,6 @@ class _IntroScreenState extends State<IntroScreen> {
     _introTimeout?.cancel();
     _instructionTimeout?.cancel();
     _monitorTimer?.cancel();
-    _debugTimer?.cancel();
 
     _intro?.pause();
     _instruction?.pause();
@@ -432,7 +385,6 @@ class _IntroScreenState extends State<IntroScreen> {
     _introTimeout?.cancel();
     _instructionTimeout?.cancel();
     _monitorTimer?.cancel();
-    _debugTimer?.cancel();
 
     _intro?.removeListener(_onIntroProgress);
     _instruction?.removeListener(_onInstructionProgress);
