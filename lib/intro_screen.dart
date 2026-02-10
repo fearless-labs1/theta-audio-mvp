@@ -46,7 +46,7 @@ class _IntroScreenState extends State<IntroScreen> {
   bool _showLatestPc = false;
   double _latestPcOpacity = 0.0;
 
-  // Windows “if nothing starts, don’t hang forever”
+  // Desktop “if nothing starts, don’t hang forever”
   Timer? _windowsStartGuard;
 
   @override
@@ -59,12 +59,12 @@ class _IntroScreenState extends State<IntroScreen> {
       // Pre-cache splash image
       precacheImage(const AssetImage('assets/images/latest_pc.png'), context);
 
-      // Guard: if Windows video playback never starts, force continue.
-      if (Platform.isWindows) {
+      // Guard: if desktop video playback never starts, force continue.
+      if (Platform.isWindows || Platform.isLinux) {
         _windowsStartGuard = Timer(const Duration(seconds: 15), () {
           if (!mounted || _hasNavigated) return;
           if (!_introCompleted && !_instructionCompleted) {
-            debugPrint('⚠️ Windows start guard triggered — skipping videos');
+            debugPrint('⚠️ Desktop start guard triggered — skipping videos');
             _startFadeAndNavigate();
           }
         });
