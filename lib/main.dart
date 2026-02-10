@@ -15,9 +15,13 @@
 // 10. ✅ All dialogs have 4px gold borders
 
 import 'package:flutter/material.dart';
+import 'package:video_player_media_kit/video_player_media_kit.dart';
 import 'package:theta_audio_mvp/app/app.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  VideoPlayerMediaKit.ensureInitialized(
+    linux: true,
+  );
   runApp(const ThetaApp());
 }
