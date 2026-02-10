@@ -18,7 +18,6 @@ dependencies:
   
   # Video playback (after changes, run: flutter clean && flutter pub get)
   video_player: ^2.10.1
-  video_player_linux: ^2.3.1
   video_player_win: ^3.0.0
     
   # HTTP requests (for Guide Me API)
