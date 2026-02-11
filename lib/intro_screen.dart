@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:theta_audio_mvp/app/router.dart';
+import 'package:theta_audio_mvp/core/platform_env.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -46,33 +47,84 @@ class _IntroScreenState extends State<IntroScreen> {
   bool _showLatestPc = false;
   double _latestPcOpacity = 0.0;
 
-  // Desktop “if nothing starts, don’t hang forever”
+  // Desktop “if nothing starts, don't hang forever”
   Timer? _windowsStartGuard;
+  Timer? _firstFrameGuard;
+
+  static const bool _disableIntroVideo =
+      bool.fromEnvironment('THETA_DISABLE_INTRO_VIDEO', defaultValue: false);
+  static const bool _forceIntroVideoOnWsl =
+      bool.fromEnvironment('THETA_FORCE_INTRO_VIDEO_ON_WSL', defaultValue: false);
 
   @override
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
       // Pre-cache splash image
       precacheImage(const AssetImage('assets/images/latest_pc.png'), context);
+
+      if (_shouldSkipIntroVideo) {
+        debugPrint('INTRO_VIDEO: fallback-reason=${_fallbackReasonForDisabledVideo()}');
+        unawaited(_startFadeAndNavigate());
+        return;
+      }
 
       // Guard: if desktop video playback never starts, force continue.
       if (Platform.isWindows || Platform.isLinux) {
         _windowsStartGuard = Timer(const Duration(seconds: 15), () {
           if (!mounted || _hasNavigated) return;
           if (!_introCompleted && !_instructionCompleted) {
-            debugPrint('⚠️ Desktop start guard triggered — skipping videos');
+            debugPrint('INTRO_VIDEO: fallback-reason=start-guard-timeout');
             _startFadeAndNavigate();
           }
         });
       }
 
-      await _initAndPlayIntro();
+      runZonedGuarded(() async {
+        debugPrint('INTRO_VIDEO: using-video');
+        await _initAndPlayIntro();
+        _startFirstFrameGuard();
+      }, (error, stackTrace) {
+        debugPrint('INTRO_VIDEO: fallback-reason=zone-error error=$error');
+        if (!mounted || _hasNavigated) return;
+        unawaited(_startFadeAndNavigate());
+      });
     });
 
+  }
+
+  String _fallbackReasonForDisabledVideo() {
+    if (_disableIntroVideo) return 'video-disabled-flag';
+    if (PlatformEnv.isWSL && !_forceIntroVideoOnWsl) return 'wsl-auto-disabled';
+    if (Platform.isLinux && !PlatformEnv.hasDisplay) return 'linux-no-display';
+    return 'video-disabled';
+  }
+
+  bool get _shouldSkipIntroVideo {
+    if (_disableIntroVideo) return true;
+    if (PlatformEnv.isWSL && !_forceIntroVideoOnWsl) {
+      return true;
+    }
+    if (Platform.isLinux && !PlatformEnv.hasDisplay) {
+      return true;
+    }
+    return false;
+  }
+
+  void _startFirstFrameGuard() {
+    _firstFrameGuard?.cancel();
+    _firstFrameGuard = Timer(const Duration(seconds: 5), () {
+      if (!mounted || _hasNavigated) return;
+      final active = _showingIntro ? _intro : _instruction;
+      final position = active?.value.position ?? Duration.zero;
+      if (position == Duration.zero) {
+        debugPrint('INTRO_VIDEO: fallback-reason=no-first-frame-timeout');
+        _startFadeAndNavigate();
+      }
+    });
   }
 
   Future<void> _initAndPlayIntro() async {
@@ -104,7 +156,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _startIntroTimeout();
       _startPlaybackMonitor();
     } catch (e, st) {
-      debugPrint('❌ INTRO INIT/PLAY FAILED: $e');
+      debugPrint('INTRO_VIDEO: fallback-reason=intro-init-failed error=$e');
       debugPrint('$st');
       _switchToInstruction();
     }
@@ -130,7 +182,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
       debugPrint('✅ INSTRUCTION preloaded');
     } catch (e, st) {
-      debugPrint('⚠️ INSTRUCTION PRELOAD FAILED: $e');
+      debugPrint('INTRO_VIDEO: fallback-reason=instruction-preload-failed error=$e');
       debugPrint('$st');
       // We can still navigate later even if instruction fails.
     }
@@ -146,7 +198,7 @@ class _IntroScreenState extends State<IntroScreen> {
       }
 
       if (_instruction == null || !_instructionInitialized) {
-        debugPrint('⚠️ Instruction not available — navigating');
+        debugPrint('INTRO_VIDEO: fallback-reason=instruction-not-available');
         _startFadeAndNavigate();
         return;
       }
@@ -162,7 +214,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
       _startInstructionTimeout();
     } catch (e, st) {
-      debugPrint('❌ INSTRUCTION INIT/PLAY FAILED: $e');
+      debugPrint('INTRO_VIDEO: fallback-reason=instruction-init-failed error=$e');
       debugPrint('$st');
       _startFadeAndNavigate();
     }
@@ -178,6 +230,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
     if (!_introPlaybackStarted && v.isPlaying && pos > Duration.zero) {
       _introPlaybackStarted = true;
+      _firstFrameGuard?.cancel();
     }
 
     // Treat “near end” as complete
@@ -198,6 +251,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
     if (!_instructionPlaybackStarted && v.isPlaying && pos > Duration.zero) {
       _instructionPlaybackStarted = true;
+      _firstFrameGuard?.cancel();
     }
 
     if (dur.inMilliseconds > 0 &&
@@ -308,6 +362,7 @@ class _IntroScreenState extends State<IntroScreen> {
     debugPrint('🌟 FADE + NAVIGATE');
 
     _windowsStartGuard?.cancel();
+    _firstFrameGuard?.cancel();
     _introTimeout?.cancel();
     _instructionTimeout?.cancel();
     _monitorTimer?.cancel();
@@ -383,6 +438,7 @@ class _IntroScreenState extends State<IntroScreen> {
   @override
   void dispose() {
     _windowsStartGuard?.cancel();
+    _firstFrameGuard?.cancel();
     _introTimeout?.cancel();
     _instructionTimeout?.cancel();
     _monitorTimer?.cancel();
