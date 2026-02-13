@@ -16,8 +16,11 @@ dependencies:
   # Background audio service
   audio_service: ^0.18.18
   
-  # Video playback
+  # Video playback (after changes, run: flutter clean && flutter pub get)
   video_player: ^2.10.1
+  video_player_win: ^3.0.0
+  video_player_media_kit: ^2.0.0
+  media_kit_libs_linux: ^1.0.12
     
   # HTTP requests (for Guide Me API)
   http: ^1.6.0

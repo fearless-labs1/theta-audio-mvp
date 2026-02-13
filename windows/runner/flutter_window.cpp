@@ -27,6 +27,43 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
+  window_control_channel_ =
+      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          flutter_controller_->engine()->messenger(),
+          "theta/window_controls",
+          &flutter::StandardMethodCodec::GetInstance());
+  window_control_channel_->SetMethodCallHandler(
+      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+                 result) {
+        HWND window = GetHandle();
+        if (!window) {
+          result->Error("no_window", "Window handle unavailable.");
+          return;
+        }
+        const std::string& method = call.method_name();
+        if (method == "minimize") {
+          ShowWindow(window, SW_MINIMIZE);
+          result->Success();
+          return;
+        }
+        if (method == "toggleMaximize") {
+          if (IsZoomed(window)) {
+            ShowWindow(window, SW_RESTORE);
+          } else {
+            ShowWindow(window, SW_MAXIMIZE);
+          }
+          result->Success();
+          return;
+        }
+        if (method == "close") {
+          PostMessage(window, WM_CLOSE, 0, 0);
+          result->Success();
+          return;
+        }
+        result->NotImplemented();
+      });
+
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
   });
