@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:theta_audio_mvp/app/router.dart';
-import 'package:theta_audio_mvp/core/platform_env.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -96,15 +95,11 @@ class _IntroScreenState extends State<IntroScreen> {
 
   String _fallbackReasonForDisabledVideo() {
     if (_disableIntroVideo) return 'video-disabled-flag';
-    if (Platform.isLinux && !PlatformEnv.hasDisplay) return 'linux-no-display';
     return 'video-disabled';
   }
 
   bool get _shouldSkipIntroVideo {
     if (_disableIntroVideo) return true;
-    if (Platform.isLinux && !PlatformEnv.hasDisplay) {
-      return true;
-    }
     return false;
   }
 
