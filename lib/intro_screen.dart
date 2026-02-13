@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:theta_audio_mvp/app/router.dart';
+import 'package:theta_audio_mvp/core/platform_env.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -52,6 +53,8 @@ class _IntroScreenState extends State<IntroScreen> {
 
   static const bool _disableIntroVideo =
       bool.fromEnvironment('THETA_DISABLE_INTRO_VIDEO', defaultValue: false);
+  static const bool _forceIntroVideoOnWsl =
+      bool.fromEnvironment('THETA_FORCE_INTRO_VIDEO_ON_WSL', defaultValue: false);
 
   @override
   void initState() {
@@ -95,11 +98,13 @@ class _IntroScreenState extends State<IntroScreen> {
 
   String _fallbackReasonForDisabledVideo() {
     if (_disableIntroVideo) return 'video-disabled-flag';
+    if (PlatformEnv.isWSL && !_forceIntroVideoOnWsl) return 'wsl-auto-disabled';
     return 'video-disabled';
   }
 
   bool get _shouldSkipIntroVideo {
     if (_disableIntroVideo) return true;
+    if (PlatformEnv.isWSL && !_forceIntroVideoOnWsl) return true;
     return false;
   }
 
