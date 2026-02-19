@@ -13,6 +13,14 @@ class IntroScreen extends StatefulWidget {
 }
 
 class _IntroScreenState extends State<IntroScreen> {
+  static const List<String> _introAssets = [
+    'assets/video/intro_video.mp4',
+    'assets/video/intro_video.mov',
+  ];
+  static const List<String> _instructionAssets = [
+    'assets/video/instruction_vid.mp4',
+  ];
+
   VideoPlayerController? _intro;
   VideoPlayerController? _instruction;
 
@@ -70,14 +78,18 @@ class _IntroScreenState extends State<IntroScreen> {
 
   Future<void> _initAndPlayIntro() async {
     try {
-      debugPrint('🎬 INIT INTRO: assets/video/intro_video.mp4');
+      debugPrint('🎬 INIT INTRO');
 
       await _disposeIntro();
 
-      _intro = VideoPlayerController.asset('assets/video/intro_video.mp4');
+      _intro = await _createVideoController(_introAssets);
+      if (_intro == null) {
+        debugPrint('❌ INTRO INIT FAILED: no playable intro asset');
+        _switchToInstruction();
+        return;
+      }
 
       // IMPORTANT: initialize first, THEN set volume/looping, THEN play.
-      await _intro!.initialize().timeout(const Duration(seconds: 8));
       await _intro!.setVolume(1.0);
       await _intro!.setLooping(false);
 
@@ -105,14 +117,16 @@ class _IntroScreenState extends State<IntroScreen> {
     if (_instructionInitialized) return;
 
     try {
-      debugPrint('📦 PRELOAD INSTRUCTION: assets/video/instruction_vid.mp4');
+      debugPrint('📦 PRELOAD INSTRUCTION');
 
       await _disposeInstruction();
 
-      _instruction =
-          VideoPlayerController.asset('assets/video/instruction_vid.mp4');
+      _instruction = await _createVideoController(_instructionAssets);
+      if (_instruction == null) {
+        debugPrint('⚠️ INSTRUCTION PRELOAD FAILED: no playable instruction asset');
+        return;
+      }
 
-      await _instruction!.initialize().timeout(const Duration(seconds: 8));
       await _instruction!.setVolume(1.0);
       await _instruction!.setLooping(false);
 
@@ -333,6 +347,24 @@ class _IntroScreenState extends State<IntroScreen> {
     } catch (_) {}
     _instruction = null;
     _instructionInitialized = false;
+  }
+
+  Future<VideoPlayerController?> _createVideoController(
+    List<String> candidates,
+  ) async {
+    for (final asset in candidates) {
+      VideoPlayerController? controller;
+      try {
+        debugPrint('🎞️ Trying asset: $asset');
+        controller = VideoPlayerController.asset(asset);
+        await controller.initialize().timeout(const Duration(seconds: 20));
+        return controller;
+      } catch (e) {
+        debugPrint('⚠️ Failed asset: $asset ($e)');
+        await controller?.dispose();
+      }
+    }
+    return null;
   }
 
   @override
